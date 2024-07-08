@@ -31,7 +31,7 @@ def main():
         description='Run electricity scheduling task net experiments.')
     parser.add_argument('--save', type=str, 
         metavar='save-folder', help='prefix to add to save path')
-    parser.add_argument('--nRuns', type=int, default=10,
+    parser.add_argument('--nRuns', type=int, default=1,
         metavar='runs', help='number of runs')
     args = parser.parse_args()
 
@@ -58,7 +58,7 @@ def main():
             os.makedirs(save_folder)
 
         # Generation scheduling problem params.
-        params = {"n": 24, "c_ramp": 0.4, "gamma_under": 50, "gamma_over": 0.5}
+        params = {"n": 24, "c_ramp": 0.4, "gamma_under": 50, "gamma_over": 0.5, "c_b": 10, "c_h": 1, "q_b": 2, "q_h": 0.5}
 
         # Run and eval rmse-minimizing net
         

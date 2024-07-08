@@ -11,10 +11,11 @@ def task_loss(Y_sched, Y_actual, params):
     # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
     #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
     #         0.5 * (Y_sched - Y_actual)**2).mean()
-    under_loss = params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0)
-    over_loss = params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0)
-    mse_loss = (Y_sched - Y_actual)**2
-    total_loss = (under_loss + over_loss + mse_loss).mean()
+    under_loss = params["c_b"] * torch.clamp(Y_actual - Y_sched, min=0)
+    over_loss = params["c_h"] * torch.clamp(Y_sched - Y_actual, min=0)
+    under_loss_squared = params["q_b"] * torch.clamp((Y_actual - Y_sched)**2, min=0)
+    over_loss_squared = params["q_h"] * torch.clamp((Y_sched - Y_actual)**2, min=0)
+    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean()
     return total_loss
     # return mse_loss.mean()
 
@@ -32,9 +33,7 @@ def eval_net(which, variables, params, save_folder):
         opt.zero_grad()
         Y_sched_train = odeint(func, y0, torch.linspace(0, len(variables['Y_train']), len(variables['Y_train'])), method='rk4')
         Y_sched_train_total_hospitalizations = (Y_sched_train[:, [6]] + Y_sched_train[:, [7]])
-        # Y_sched_train_total_hospitalizations = (Y_sched_train[:, 6] + Y_sched_train[:, 7])
         print("you are here")
-        # train_loss = task_loss(Y_sched_train_total_hospitalizations.float(), variables['Y_train'].float(), params)
         train_loss = task_loss(Y_sched_train_total_hospitalizations.flatten(), variables['Y_train'], params)
 
         # train_loss = loss(Y_sched_train[:, [6]], variables['Y_train'])
@@ -45,17 +44,20 @@ def eval_net(which, variables, params, save_folder):
         opt.step()
         print('beta:', func.beta)
         print("you are here")
+
+        test_loss = 0
         
-        # with torch.no_grad():
-        #     Y_sched_test = odeint(func, y0, torch.linspace(0, len(variables['Y_test']) + len(variables['Y_train']), len(variables['Y_test']) + len(variables['Y_train'])), method='rk4')
-        #     Y_sched_test_new = Y_sched_test[len(variables['Y_train']):]
-        #     Y_sched_test_total_hospitalizations = Y_sched_test_new[:, 6] + Y_sched_test_new[:, 7]
-        #     # import pdb
-        #     # pdb.set_trace()
-        #     test_loss = task_loss(Y_sched_test_total_hospitalizations.float(), variables['Y_test'].float(), params)
+        with torch.no_grad():
+            func.reset_t()
+            Y_sched_test = odeint(func, y0, torch.linspace(0, len(variables['Y_test']) + len(variables['Y_train']), len(variables['Y_test']) + len(variables['Y_train'])), method='rk4')
+            Y_sched_test_new = Y_sched_test[len(variables['Y_train']):]
+            Y_sched_test_total_hospitalizations = Y_sched_test_new[:, 6] + Y_sched_test_new[:, 7]
+            # import pdb
+            # pdb.set_trace()
+            test_loss = task_loss(Y_sched_test_total_hospitalizations.flatten(), variables['Y_test'], params)
         
         # print(i, train_loss.item(), test_loss.item())
-        print(i, train_loss.item())
+        print(i, train_loss.item(), test_loss.item())
         # import pdb
         # pdb.set_trace()
 
