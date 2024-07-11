@@ -25,7 +25,7 @@ def rmse_loss(Y_sched, Y_actual):
     # rmse = torch.sqrt(mse)
     diff = Y_sched - Y_actual
     mse = torch.mean(diff ** 2)  # Compute mean squared error
-    rmse = torch.sqrt(mse)
+    rmse = torch.sqrt(mse)  # Compute root mean squared error
     return rmse
 
 def negative_log_likelihood(Y_sched, Y_actual, sigma):
@@ -100,7 +100,7 @@ def eval_net(which, variables, params, save_folder):
         # pdb.set_trace()
 
     func.eval()
-    return func
+    
 
     # Output the final RMSE and NLL values
     print(f'Final RMSE: {rmse.item():.4f}')
@@ -122,3 +122,4 @@ def eval_net(which, variables, params, save_folder):
     plt.savefig(save_path)
 
     plt.show()
+    return func
