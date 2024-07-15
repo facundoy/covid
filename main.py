@@ -28,11 +28,12 @@ from constants import *
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Run electricity scheduling task net experiments.')
+        description='Run covid bed allocation experiment.')
     parser.add_argument('--save', type=str, 
         metavar='save-folder', help='prefix to add to save path')
     parser.add_argument('--nRuns', type=int, default=1,
         metavar='runs', help='number of runs')
+    parser.add_argument('--loss', type=str, default="task")
     args = parser.parse_args()
 
     # Train, test split.
@@ -47,28 +48,29 @@ def main():
     Y_train = torch.tensor(training_data, dtype=torch.float, device=DEVICE)
     Y_test = torch.tensor(testing_data, dtype=torch.float, device=DEVICE)
     
-    variables_rmse = {'Y_train': Y_train, 'Y_test': Y_test}
+    variables = {'Y_train': Y_train, 'Y_test': Y_test}
 
     base_save = 'results' if args.save is None else '{}-results'.format(args.save)
 
-    print(args.nRuns)
+    # print(args.nRuns)
+    loss = args.loss
 
     for run in range(args.nRuns):
-        print (run)
+        # print (run)
 
         save_folder = os.path.join(base_save, str(run))
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
 
         # Generation scheduling problem params.
-        params = {"n": 24, "c_ramp": 0.4, "gamma_under": 50, "gamma_over": 0.5}
+        params = {"n": 24, "c_ramp": 0.4, "gamma_under": 50, "gamma_over": 0.5, "c_b": 10, "c_h": 1, "q_b": 2, "q_h": 0.5}
 
         # Run and eval rmse-minimizing net
         
         # if USE_GPU:
         #     model_rmse = model_rmse.cuda()
   
-        new_nets.eval_net("rmse_net", variables_rmse, params, save_folder)
+        new_nets.eval_net(loss, variables, params, save_folder)
 
 
 
