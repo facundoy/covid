@@ -33,6 +33,8 @@ def main():
         metavar='save-folder', help='prefix to add to save path')
     parser.add_argument('--nRuns', type=int, default=1,
         metavar='runs', help='number of runs')
+    parser.add_argument('--loss', type=str, default="task",
+        metavar="loss_function", help="Choose the loss function to train with, use task or rmse")
     args = parser.parse_args()
 
     # Train, test split.
@@ -65,7 +67,7 @@ def main():
         # if USE_GPU:
         #     model_rmse = model_rmse.cuda()
   
-        new_nets.eval_net("rmse_net", variables_rmse, params, save_folder)
+        new_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss)
 
 
 

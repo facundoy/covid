@@ -266,7 +266,7 @@ class ODEFunc(nn.Module):
         self.lambdas = 1/5.5
         self.rhor = 1/15
         self.rhod = 1/13.3
-        self.beta = nn.Parameter(torch.tensor(0.25,device=DEVICE))
+        self.beta = nn.Parameter(torch.tensor(0.4,device=DEVICE))
         self.t = 0
 
     def set_beta(self,beta):
