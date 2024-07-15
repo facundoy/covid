@@ -34,7 +34,8 @@ def task_test(Y_sched, Y_actual, params):
 
 def rmse_loss(Y_sched, Y_actual):
     error = (Y_actual - Y_sched)**2
-    return np.sqrt(error.mean())
+    error = torch.mean(error)
+    return torch.sqrt(error)
 
 def rmse_test(Y_sched, Y_actual):
     error = (Y_actual - Y_sched)**2
@@ -64,7 +65,10 @@ def eval_net(which, variables, params, save_folder, loss_func):
         Y_sched_train = odeint(func, y0, torch.linspace(0, len(variables['Y_train']), len(variables['Y_train'])), method='rk4')
         Y_sched_train_total_hospitalizations = (Y_sched_train[:, [6]] + Y_sched_train[:, [7]])
         # print("you are here")
-        train_loss = task_loss(Y_sched_train_total_hospitalizations.flatten(), variables['Y_train'], params)
+        if (loss_func == 'task'):
+            train_loss = task_loss(Y_sched_train_total_hospitalizations.flatten(), variables['Y_train'], params)
+        else: 
+            train_loss = rmse_loss(Y_sched_train_total_hospitalizations.flatten(), variables['Y_train'])
 
         # train_loss = loss(Y_sched_train[:, [6]], variables['Y_train'])
         
