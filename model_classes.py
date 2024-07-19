@@ -228,29 +228,6 @@ class ODEFunc(nn.Module):
     def __init__(self):
         super(ODEFunc,self).__init__()
 
-        # self.N = nn.Parameter(torch.tensor(1938000.0,device=DEVICE))
-        # self.Ca = nn.Parameter(torch.tensor(0.425,device=DEVICE))
-        # self.Cp = nn.Parameter(torch.tensor(1.0,device=DEVICE))
-        # self.Cm = nn.Parameter(torch.tensor(1.0,device=DEVICE))
-        # self.Cs = nn.Parameter(torch.tensor(1.0,device=DEVICE))
-        # self.alpha = nn.Parameter(torch.tensor(0.4875,device=DEVICE))
-        # self.delta = nn.Parameter(torch.tensor(0.1375,device=DEVICE))
-        # self.mu = nn.Parameter(torch.tensor(0.928125,device=DEVICE))
-        # self.gamma = nn.Parameter(torch.tensor(1/3.5,device=DEVICE))
-        # self.lambdaa = nn.Parameter(torch.tensor(1/7,device=DEVICE))
-        # self.lambdap = nn.Parameter(torch.tensor(1/1.5,device=DEVICE))
-        # self.lambdam = nn.Parameter(torch.tensor(1/5.5,device=DEVICE))
-        # self.lambdas = nn.Parameter(torch.tensor(1/5.5,device=DEVICE))
-        # self.rhor = nn.Parameter(torch.tensor(1/15,device=DEVICE))
-        # self.rhod = nn.Parameter(torch.tensor(1/13.3,device=DEVICE))
-
-        # self.gamma = nn.Parameter(torch.tensor(3.5,device=DEVICE))
-        # self.lambdaa = nn.Parameter(torch.tensor(7.0,device=DEVICE))
-        # self.lambdap = nn.Parameter(torch.tensor(1.5,device=DEVICE))
-        # self.lambdam = nn.Parameter(torch.tensor(5.5,device=DEVICE))
-        # self.lambdas = nn.Parameter(torch.tensor(5.5,device=DEVICE))
-        # self.rhor = nn.Parameter(torch.tensor(15.0,device=DEVICE))
-        # self.rhod = nn.Parameter(torch.tensor(13.3,device=DEVICE))
         self.N = 1938000.0
         self.Ca = 0.425
         self.Cp = 1.0

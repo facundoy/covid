@@ -10,6 +10,20 @@ import math
 import sys
 import csv
 
+class CalibNN(nn.Module):
+    def __init__(self, input_size=1, hidden_size=10, output_size=1):
+        super(CalibNN, self).__init__()
+        self.fc1 = nn.Linear(input_size, hidden_size)
+        self.fc2 = nn.Linear(hidden_size, hidden_size)
+        self.fc3 = nn.Linear(hidden_size, output_size)
+        self.relu = nn.ReLU()
+
+    def forward(self, x):
+        x = self.relu(self.fc1(x))
+        x = self.relu(self.fc2(x))
+        x = self.fc3(x)
+        return x
+
 def task_train_loss(Y_sched, Y_actual, params):
     # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
     #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
@@ -55,6 +69,12 @@ def rmse_test_loss(Y_sched, Y_actual):
 #"which" and "save_folder" parameters not used
 def eval_net(loss, variables, params, save_folder):
     func = model_classes.ODEFunc()
+
+    calib_nn = CalibNN()
+    x = torch.tensor([1.0], device=DEVICE)  # Initialize x to 1
+    # Get the beta value from the CalibNN
+    beta = calib_nn(x)
+    func.set_beta(beta.item())
 
     #Initialize sigma for NLL loss
     # sigma = torch.tensor([1.0], requires_grad=True)
