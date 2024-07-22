@@ -266,11 +266,12 @@ class ODEFunc(nn.Module):
         self.lambdas = 1/5.5
         self.rhor = 1/15
         self.rhod = 1/13.3
-        self.beta = nn.Parameter(torch.tensor(0.4,device=DEVICE))
+        #Don't need nn.parameter anymore
+        self.beta = 0.4
         self.t = 0
 
     def set_beta(self,beta):
-        self.beta = nn.Parameter(torch.tensor(beta,device=DEVICE))
+        self.beta = beta
 
     def forward(self,t,y):
         """defining y0 etc, y is a vector 10, one dimension is 10, another dimension is time
@@ -334,6 +335,24 @@ class ODEFunc(nn.Module):
     
     def reset_t(self):
         self.t = 0
+
+class CalibrationNN(nn.Module):
+    def __init__(self):
+        super(CalibrationNN, self).__init__()
+        self.fc1 = nn.Linear(1, 64)
+        self.fc2 = nn.Linear(64, 32)
+        self.fc3 = nn.Linear(32, 1)
+        self.min_value = 0.0
+        self.max_value = 1.0
+        self.sigmoid = nn.Sigmoid()
+
+
+    def forward(self, x):
+        x = torch.relu(self.fc1(x))
+        x = torch.relu(self.fc2(x))
+        beta = self.fc3(x)
+        out = self.min_value + (self.max_value-self.min_value)*self.sigmoid(beta)
+        return beta
 
 
 import numpy as np
