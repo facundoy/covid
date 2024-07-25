@@ -14,6 +14,9 @@ try: import setGPU
 except ImportError: pass
 
 import torch
+import torch
+import torch.nn as nn
+import torch.optim as optim
 
 
 import model_classes, new_nets
@@ -69,8 +72,21 @@ def main():
         
         # if USE_GPU:
         #     model_rmse = model_rmse.cuda()
-  
-        new_nets.eval_net(loss, variables, params, save_folder)
+
+        # y0_dict = {
+        #     100: torch.tensor([1938000.0 - 116.0, 0.0, 100.0, 5.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0], dtype=torch.float32),
+        #     500: torch.tensor([1938000.0 - 516.0, 0.0, 500.0, 5.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0], dtype=torch.float32),
+        #     1000: torch.tensor([1938000.0 - 1016.0, 0.0, 1000.0, 5.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0], dtype=torch.float32),
+        #     5000: torch.tensor([1938000.0 - 5016.0, 0.0, 5000.0, 5.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0], dtype=torch.float32),
+        #     10000: torch.tensor([1938000.0 - 10016.0, 0.0, 10000.0, 5.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0], dtype=torch.float32)
+        # }
+        # for key in sorted(y0_dict.keys()):
+        #     new_nets.eval_net(loss, variables, params, key, y0_dict[key], save_folder)
+        
+        ic = [2000.0, 20000.0, 25.0]
+        y0 = torch.tensor([1938000.0 - ic[0] - ic[1] - 3*ic[2] - 11, ic[0], ic[1], ic[2], ic[2], ic[2], 6.0, 5.0, 0.0, 0.0], dtype=torch.float32)
+        new_nets.eval_net(loss, variables, params, -1, y0, save_folder)
+
 
 
 

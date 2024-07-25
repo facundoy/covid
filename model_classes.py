@@ -236,6 +236,7 @@ class ODEFunc(nn.Module):
         self.alpha = 0.4875
         self.delta = 0.1375
         self.mu = 0.928125
+        #Inverses?
         self.gamma = 1/3.5
         self.lambdaa = 1/7
         self.lambdap = 1/1.5
@@ -243,11 +244,21 @@ class ODEFunc(nn.Module):
         self.lambdas = 1/5.5
         self.rhor = 1/15
         self.rhod = 1/13.3
-        self.beta = nn.Parameter(torch.tensor(0.325,device=DEVICE))
+
+        # self.beta = nn.Parameter(torch.tensor(0.325,device=DEVICE))
         self.t = 0
 
-    def set_beta(self,beta):
-        self.beta = nn.Parameter(torch.tensor(beta,device=DEVICE))
+    # def set_beta(self,beta):
+    #     self.beta = beta
+    
+    def set_params(self, params):
+        self.beta = params[0]
+        self.Ca = params[1]
+        self.alpha = params[2]
+        self.delta = params[3]
+        self.rhod = params[4]
+        self.mu = params[5]
+
 
     def forward(self,t,y):
         """defining y0 etc, y is a vector 10, one dimension is 10, another dimension is time
