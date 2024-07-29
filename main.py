@@ -66,8 +66,22 @@ def main():
         
         # if USE_GPU:
         #     model_rmse = model_rmse.cuda()
-  
-        new_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss)
+
+
+        #Loop for testing
+        # E_test = [2000.0, 2250.0, 2500.0, 2750.0]
+        # Ia_test = [5000.0, 10000.0, 15000.0, 20000.0]
+        # I_test = [15.0, 20.0, 25.0]
+
+        # for E in E_test:
+        #     for Ia in Ia_test:
+        #         for I in I_test:
+        #             ic = [E, Ia, I]
+        #             new_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss, ic)
+            
+
+        initial_conditions = [1000.0, 30000.0, 50.0]
+        new_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss, initial_conditions)
 
 
 

@@ -41,7 +41,7 @@ def rmse_test(Y_sched, Y_actual):
     error = (Y_actual - Y_sched)**2
     return torch.sqrt(error.detach())
 
-def eval_net(which, variables, params, save_folder, loss_func):
+def eval_net(which, variables, params, save_folder, loss_func, ic):
 
     if (loss_func == 'task'):
         print("Training wiht task loss")
@@ -58,7 +58,7 @@ def eval_net(which, variables, params, save_folder, loss_func):
 
 
     # func.set_beta(0.5)
-    y0 = torch.tensor([1938000.0 - 10031.0, 0.0, 10000.0, 20.0, 0.0, 0.0, 0.0, 5.0, 6.0, 0.0], dtype=torch.float32)
+    y0 = torch.tensor([1938000.0 - ic[0] - ic[1] - 3*ic[2] - 11, ic[0], ic[1], ic[2], ic[2], ic[2], 6.0, 5.0, 0.0, 0.0], dtype=torch.float32)
     # ode_params = list(func.parameters())
     calib_params = list(calib.parameters())
     opt = optim.Adam(calib.parameters(), lr=1e-3)
@@ -70,18 +70,23 @@ def eval_net(which, variables, params, save_folder, loss_func):
         func.reset_t()
         opt.zero_grad()
 
-        beta = calib(x)
-        print(beta)
-        func.set_beta(beta)
-        Y_sched_train = odeint(func, y0, torch.linspace(0, len(variables['Y_train']), len(variables['Y_train'])), method='rk4')
+        parameters = calib(x)
+        print(parameters)
+        func.set_params(parameters)
+
+        y0 = torch.tensor([1938000.0 - func.E - func.Ia - func.Ip - func.Im - func.Is - func.Hd - func.Hr, func.E, func.Ia, func.Ip, func.Im, func.Is, func.Hd, func.Hr, 0.0, 0.0], dtype=torch.float32)
+
+        Y_sched_train = odeint(func, y0, torch.linspace(0, len(variables['Y_test']) + len(variables['Y_train']), len(variables['Y_test']) + len(variables['Y_train'])), method='rk4')
         Y_sched_train_total_hospitalizations = (Y_sched_train[:, [6]] + Y_sched_train[:, [7]])
         # print("you are here")
         if (loss_func == 'task'):
-            train_loss = task_loss(Y_sched_train_total_hospitalizations.flatten(), variables['Y_train'], params)
+            train_loss = task_loss(Y_sched_train_total_hospitalizations.flatten(), torch.cat((variables["Y_train"],variables["Y_test"])), params)
+            print(train_loss)
         else: 
-            train_loss = rmse_loss(Y_sched_train_total_hospitalizations.flatten(), variables['Y_train'])
+            train_loss = rmse_loss(Y_sched_train_total_hospitalizations.flatten(), torch.cat((variables["Y_train"],variables["Y_test"])))
+            print(train_loss)
 
-        # train_loss = loss(Y_sched_train[:, [6]], variables['Y_train'])
+
         
         # print(Y_sched_train)
         train_loss.backward()
@@ -94,8 +99,9 @@ def eval_net(which, variables, params, save_folder, loss_func):
     func.eval()
     calib.eval()
     func.reset_t()
-    beta = calib(x)
-    func.set_beta(beta)
+    parameters = calib(x)
+    print(parameters)
+    func.set_params(parameters)
     Y_sched_test = odeint(func, y0, torch.linspace(0, len(variables['Y_test']) + len(variables['Y_train']), len(variables['Y_test']) + len(variables['Y_train'])), method='rk4')
     Y_sched_test_new = Y_sched_test[len(variables['Y_train']):]
     Y_sched_test_total_hospitalizations = Y_sched_test_new[:, 6] + Y_sched_test_new[:, 7]
@@ -111,6 +117,19 @@ def eval_net(which, variables, params, save_folder, loss_func):
         writer = csv.writer(file)
         writer.writerow(['Day', 'Task Loss', 'RMSE Loss'])
         writer.writerows(data)
+
+
+    plt.figure()
+    plt.plot(np.concatenate((variables["Y_train"],variables["Y_test"])), label = "Data Hospitalizations")
+    all_hospitalizations = Y_sched_test[:, 6] + Y_sched_test[: , 7]
+    print(all_hospitalizations)
+    plt.plot(all_hospitalizations.detach(), label = "Predicted Hospitalizations")
+    plt.title("Total Hospitalizations E=" + str(ic[0]) + " Ia=" + str(ic[1]) + " Ip/Im/Is=" + str(ic[2]))
+    plt.xlabel("Day")
+    plt.ylabel("Hospitalizations")
+    plt.legend()
+    # plt.savefig("hospitalizations_E=" + str(ic[0]) + "_Ia=" + str(ic[1]) + "_Ip_Im_Is=" + str(ic[2]) + ".png")
+    plt.savefig("test.png")
 
 
 

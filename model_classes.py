@@ -259,19 +259,35 @@ class ODEFunc(nn.Module):
         self.alpha = 0.4875
         self.delta = 0.1375
         self.mu = 0.928125
-        self.gamma = 1/3.5
-        self.lambdaa = 1/7
-        self.lambdap = 1/1.5
-        self.lambdam = 1/5.5
-        self.lambdas = 1/5.5
-        self.rhor = 1/15
+        self.gamma = 3.5
+        self.lambdaa = 7.0
+        self.lambdap = 2.0
+        self.lambdam = 5.0
+        self.lambdas = 5.0
+        self.rhor = 13.3
         self.rhod = 1/13.3
         #Don't need nn.parameter anymore
         self.beta = 0.4
         self.t = 0
 
-    def set_beta(self,beta):
-        self.beta = beta
+        self.E = 0
+        self.Ia = 0
+        self.I = 0
+
+    def set_params(self,params):
+        self.beta = params[0]
+        self.Ca = params[1]
+        self.alpha = params[2]
+        self.delta = params[3]
+        self.rhod = params[4]
+        self.mu = params[5]
+        self.E = params[6]
+        self.Ia = params[7]
+        self.Ip = params[8]
+        self.Im = params[9]
+        self.Is = params[10]
+        self.Hr = params[11]
+        self.Hd = params[12]
 
     def forward(self,t,y):
         """defining y0 etc, y is a vector 10, one dimension is 10, another dimension is time
@@ -341,18 +357,19 @@ class CalibrationNN(nn.Module):
         super(CalibrationNN, self).__init__()
         self.fc1 = nn.Linear(1, 64)
         self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, 1)
-        self.min_value = 0.0
-        self.max_value = 1.0
+        self.fc3 = nn.Linear(32, 13)
+        self.min_value = torch.tensor([0.0, 0.0, 0.0, 0.1, 1/20.0, 0.925, 0, 0, 0, 0, 0, 0, 0], device=DEVICE)
+        self.max_value = torch.tensor([1.0, 1.0, 1.0, 0.3, 1/13.0, 0.975, 5000, 30000, 10, 10, 10, 10, 5], device=DEVICE)
         self.sigmoid = nn.Sigmoid()
+        self.ReLU = nn.ReLU()
 
 
     def forward(self, x):
-        x = torch.relu(self.fc1(x))
-        x = torch.relu(self.fc2(x))
+        x = self.ReLU(self.fc1(x))
+        x = self.ReLU(self.fc2(x))
         beta = self.fc3(x)
         out = self.min_value + (self.max_value-self.min_value)*self.sigmoid(beta)
-        return beta
+        return out
 
 
 import numpy as np
