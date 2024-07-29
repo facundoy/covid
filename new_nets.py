@@ -10,14 +10,27 @@ import math
 import sys
 import csv
 
+# from agent_torch.models import covid
+# from agent_torch.populations import astoria
+
+# from agent_torch.core.executor import Executor
+# from agent_torch.core.dataloader import LoadPopulation
+
+# import torch.nn as nn
+# import torch
+
+# sim = Executor(covid, pop_loader=LoadPopulation(astoria))
+# runner = sim.runner
+# runner.init()
+
 class CalibNN(nn.Module):
-    def __init__(self, input_size=1, hidden_size=10, output_size=6):
+    def __init__(self, input_size=1, hidden_size_1=64, hidden_size_2=32, output_size=13):
         super(CalibNN, self).__init__()
-        self.min_value = torch.tensor([0.0, 0.4, 0.3, 0.1, 1./20, 1.0 - 0.025])
-        self.max_value = torch.tensor([1.0, 0.8, 0.5, 0.3, 1./13, 1.0 - 0.075])
-        self.fc1 = nn.Linear(input_size, hidden_size)
-        self.fc2 = nn.Linear(hidden_size, hidden_size)
-        self.fc3 = nn.Linear(hidden_size, output_size)
+        self.min_value = torch.tensor([0.0, 0.4, 0.3, 0.1, 1./20, 1.0 - 0.075, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0])
+        self.max_value = torch.tensor([1.0, 0.8, 0.5, 0.3, 1./13, 1.0 - 0.025, 5000.0, 30000.0, 10.0, 10.0, 10.0, 10.0, 5.0])
+        self.fc1 = nn.Linear(input_size, hidden_size_1)
+        self.fc2 = nn.Linear(hidden_size_1, hidden_size_2)
+        self.fc3 = nn.Linear(hidden_size_2, output_size)
         self.sigmoid = nn.Sigmoid()
         self.ReLU = nn.ReLU()
 
@@ -36,7 +49,7 @@ def task_train_loss(Y_sched, Y_actual, params):
     over_loss = params["c_h"] * torch.clamp(Y_sched - Y_actual, min=0)
     under_loss_squared = params["q_b"] * torch.clamp((Y_actual - Y_sched)**2, min=0)
     over_loss_squared = params["q_h"] * torch.clamp((Y_sched - Y_actual)**2, min=0)
-    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean()
+    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).sum()
     return total_loss
     # return mse_loss.mean()
 
@@ -73,7 +86,7 @@ def rmse_test_loss(Y_sched, Y_actual):
 
 
 #"which" and "save_folder" parameters not used
-def eval_net(loss, variables, params, infected, y0, save_folder):
+def eval_net(loss, variables, params, save_folder):
     func = model_classes.ODEFunc()
 
     calib_nn = CalibNN()
@@ -87,6 +100,9 @@ def eval_net(loss, variables, params, infected, y0, save_folder):
     # nll_losses = []
     # task_train_losses = []
 
+    ic = [2000.0, 20000.0, 100.0]
+    y0 = torch.tensor([1938000.0 - ic[0] - ic[1] - 3*ic[2] - 11, ic[0], ic[1], ic[2], ic[2], ic[2], 6.0, 5.0, 0.0, 0.0], dtype=torch.float32)
+
     # func.set_beta(0.5)
     cal_params = calib_nn.parameters()
     opt = optim.Adam(cal_params, lr=1e-3)
@@ -98,6 +114,7 @@ def eval_net(loss, variables, params, infected, y0, save_folder):
         opt.zero_grad()
         parameters = calib_nn(x)
         func.set_params(parameters)
+        y0 = torch.tensor([1938000.0 - func.E - func.Ia - func.Ip - func.Im - func.Is - func.Hd - func.Hr, func.E, func.Ia, func.Ip, func.Im, func.Is, func.Hd, func.Hr, 0.0, 0.0], dtype=torch.float32)
         Y_sched_train = odeint(func, y0, torch.linspace(0, len(variables['Y_train']) + len(variables['Y_test']), len(variables['Y_train']) + len(variables['Y_test'])), method='rk4')
         Y_sched_train_total_hospitalizations = (Y_sched_train[:, [6]] + Y_sched_train[:, [7]])
 
@@ -151,6 +168,7 @@ def eval_net(loss, variables, params, infected, y0, save_folder):
         if epoch % 100 == 0 and loss == "task":
             print(f'Epoch {epoch}: Task Loss = {task_loss.item():.4f}')
             print(f'Beta: {parameters[0].item():.4f}, Ca: {parameters[1].item():.4f}, alpha: {parameters[2].item():.4f}, delta: {parameters[3].item():.4f}, rhoD: {parameters[4].item():.4f}, mu: {parameters[5].item():.4f}')
+            print(f'y0: {y0}')
             # print(f'Y_sched: {Y_sched}, Y_actual: {Y_actual}')
         elif epoch % 100 == 0 and loss == "rmse":
             print(f'Epoch {epoch}: RMSE Loss = {rmse_loss.item():.4f}')

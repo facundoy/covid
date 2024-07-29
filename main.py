@@ -2,6 +2,8 @@
 
 import argparse
 
+
+
 import os
 import pandas as pd
 import numpy as np
@@ -22,6 +24,7 @@ import torch.optim as optim
 import model_classes, new_nets
 
 from constants import *
+
 
 
 # import sys
@@ -83,9 +86,7 @@ def main():
         # for key in sorted(y0_dict.keys()):
         #     new_nets.eval_net(loss, variables, params, key, y0_dict[key], save_folder)
         
-        ic = [2000.0, 20000.0, 25.0]
-        y0 = torch.tensor([1938000.0 - ic[0] - ic[1] - 3*ic[2] - 11, ic[0], ic[1], ic[2], ic[2], ic[2], 6.0, 5.0, 0.0, 0.0], dtype=torch.float32)
-        new_nets.eval_net(loss, variables, params, -1, y0, save_folder)
+        new_nets.eval_net(loss, variables, params, save_folder)
 
 
 

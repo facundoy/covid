@@ -7,7 +7,17 @@ from functools import reduce
 from constants import *
 import pdb
 
+#Libraries for AgentTorch:
 import torch
+# # re-use existing models and population data easily
+# from agent_torch.models import covid
+# from agent_torch.populations import astoria
+
+# # use the executor to plug-n-play
+# from agent_torch.core.executor import Executor
+# from agent_torch.core.dataloader import LoadPopulation
+
+
 import torch.nn as nn
 from torch.autograd import Function
 from torch.nn.parameter import Parameter
@@ -237,15 +247,16 @@ class ODEFunc(nn.Module):
         self.delta = 0.1375
         self.mu = 0.928125
         #Inverses?
-        self.gamma = 1/3.5
-        self.lambdaa = 1/7
-        self.lambdap = 1/1.5
-        self.lambdam = 1/5.5
-        self.lambdas = 1/5.5
-        self.rhor = 1/15
+        self.gamma = 3.5
+        self.lambdaa = 7.0
+        self.lambdap = 2.0
+        self.lambdam = 5.0
+        self.lambdas = 5.0
+        self.rhor = 13.3
         self.rhod = 1/13.3
 
         # self.beta = nn.Parameter(torch.tensor(0.325,device=DEVICE))
+        self.beta = 0.325
         self.t = 0
 
     # def set_beta(self,beta):
@@ -258,7 +269,13 @@ class ODEFunc(nn.Module):
         self.delta = params[3]
         self.rhod = params[4]
         self.mu = params[5]
-
+        self.E = params[6]
+        self.Ia = params[7]
+        self.Ip = params[8]
+        self.Im = params[9]
+        self.Is = params[10]
+        self.Hr = params[11]
+        self.Hd = params[12]
 
     def forward(self,t,y):
         """defining y0 etc, y is a vector 10, one dimension is 10, another dimension is time
