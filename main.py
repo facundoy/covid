@@ -16,7 +16,7 @@ except ImportError: pass
 import torch
 
 
-import model_classes, new_nets
+import model_classes, new_nets, abm_nets
 
 from constants import *
 
@@ -81,7 +81,7 @@ def main():
             
 
         initial_conditions = [1000.0, 30000.0, 50.0]
-        new_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss, initial_conditions)
+        abm_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss, initial_conditions)
 
 
 

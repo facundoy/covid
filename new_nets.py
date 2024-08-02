@@ -133,23 +133,4 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
 
 
 
-
-    # plt.figure()
-    # plt.plot(train_results.numpy(), label="Task Loss")
-    # plt.plot(mse_train_results.numpy(), label = "MSE Loss")
-    # plt.title("Training Set Loss Comparison")
-    # plt.xlabel("Iteration")
-    # plt.ylabel("Loss")
-    # plt.legend()
-    # plt.savefig('training_set_loss.png')
-
-
-    # plt.figure()
-    # plt.plot(test_results.numpy(), label="Task Loss")
-    # plt.plot(mse_test_results.numpy(), label = "MSE Loss")
-    # plt.title("Test Set Loss Comparison")
-    # plt.xlabel("Iteration")
-    # plt.ylabel("Loss")
-    # plt.legend()
-    # plt.savefig('test_set_loss.png')
     return func

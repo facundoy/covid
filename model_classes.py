@@ -13,8 +13,6 @@ from torch.autograd import Function
 from torch.nn.parameter import Parameter
 import torch.optim as optim
 
-from qpth.qp import QPFunction
-
 ###
 
 
