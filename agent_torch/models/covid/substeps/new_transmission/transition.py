@@ -97,6 +97,8 @@ class NewTransmission(SubstepTransitionMessagePassing):
 
     def _generate_one_hot_tensor(self, timestep, num_timesteps):
         timestep_tensor = torch.tensor([timestep])
+        # import pdb
+        # pdb.set_trace()
         one_hot_tensor = F.one_hot(timestep_tensor, num_classes=num_timesteps)
 
         return one_hot_tensor.to(self.device)

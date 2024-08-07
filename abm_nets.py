@@ -115,12 +115,12 @@ def map_and_replace_tensor(input_string):
 
     return getter_and_setter
 
-def execute(runner, Y_actual, params, n_steps=5):
+def execute(runner, Y_actual, params, n_steps=28):
     runner.step(n_steps)
     labels = runner.state_trajectory[-1][-1]['environment']['daily_infected']
     print(labels)
 
-    reshaped_labels = labels.view(4, 7)
+    reshaped_labels = labels.view(4,7)
     Y_sched = reshaped_labels.sum(dim = 1)
     Y_actual = torch.tensor(Y_actual, dtype=torch.float, device=DEVICE)
 
@@ -153,9 +153,11 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
     case_numbers = df['cases'].values
 
     learn_model = LearnableParams(3)
+    opt = optim.Adam(learn_model.parameters(), lr=1e-3)
     for i in range(1000):
 
         debug_tensor = learn_model()[:, None]
+        opt.zero_grad()
         # set parameters
         input_string = learnable_params[0][0]
         tensorfunc = map_and_replace_tensor(input_string)
@@ -163,9 +165,10 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         # execute runner
         loss = execute(runner, case_numbers, params)
         print(loss)
-        loss.backward(retain_graph = True)
+        loss.backward(retain_graph = False)
         # compute gradient
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
+        opt.step()
         # print("Gradients: ", learn_params_grad)
         # print("---"*10)
 
