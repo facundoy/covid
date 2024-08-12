@@ -164,11 +164,12 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         current_tensor = tensorfunc(runner, debug_tensor, mode_calibrate=True)
         # execute runner
         loss = execute(runner, case_numbers, params)
-        print(loss)
+        print("Loss:", loss)
         loss.backward(retain_graph = False)
         # compute gradient
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
+        print(learn_params_grad)
         opt.step()
-        # print("Gradients: ", learn_params_grad)
+        print("Gradients: ", learn_params_grad)
         # print("---"*10)
 
