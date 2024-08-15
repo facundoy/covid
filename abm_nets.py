@@ -165,7 +165,7 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         # execute runner
         loss = execute(runner, case_numbers, params)
         print("Loss:", loss)
-        loss.backward(retain_graph = False)
+        loss.backward(retain_graph = True)
         # compute gradient
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
         print(learn_params_grad)
