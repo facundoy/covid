@@ -155,21 +155,27 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
     learn_model = LearnableParams(3)
     opt = optim.Adam(learn_model.parameters(), lr=1e-3)
     for i in range(1000):
+        print("Epoch", i)
+        torch.autograd.set_detect_anomaly(True)
 
-        debug_tensor = learn_model()[:, None]
         opt.zero_grad()
+
+        runner.reset()
+        debug_tensor = learn_model()[:, None]
+        
         # set parameters
+        # TODO: turn it into a single function
         input_string = learnable_params[0][0]
         tensorfunc = map_and_replace_tensor(input_string)
         current_tensor = tensorfunc(runner, debug_tensor, mode_calibrate=True)
         # execute runner
         loss = execute(runner, case_numbers, params)
         print("Loss:", loss)
-        loss.backward(retain_graph = True)
+        loss.backward()
         # compute gradient
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
-        print(learn_params_grad)
         opt.step()
-        print("Gradients: ", learn_params_grad)
+        print("*********************")
+        # print("Gradients: ", learn_params_grad)
         # print("---"*10)
 
