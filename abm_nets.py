@@ -14,6 +14,7 @@ import warnings
 warnings.simplefilter("ignore")
 import agent_torch
 from agent_torch.models import covid
+from agent_torch.models import covid_abm
 from agent_torch.populations import astoria
 from agent_torch.core.executor import Executor
 from agent_torch.core.dataloader import LoadPopulation
@@ -144,7 +145,7 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         print("Error")
         return 
     
-    sim = Executor(covid, pop_loader=LoadPopulation(astoria))
+    sim = Executor(covid_abm, pop_loader=LoadPopulation(astoria))
     runner = sim.runner
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
