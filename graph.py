@@ -4,32 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def main():
-    rmse_data = np.genfromtxt('rmse_results.csv', delimiter=',', skip_header=1)
-    task_data = np.genfromtxt('task_results.csv', delimiter=',', skip_header=1)
+    loss_data = np.genfromtxt('loss_data.csv', delimiter=',', skip_header=1)
 
-    rmse_train_task_test = rmse_data[:, 1]
-    rmse_train_rmse_test = rmse_data[:, 2]
-    task_train_task_test = task_data[:, 1]
-    task_train_rmse_test = task_data[:, 2]
+    iterations = loss_data[:, 0]
+    losses = loss_data[:, 1]
 
     plt.figure()
-    plt.plot(task_train_task_test, label = "Task Loss Trained")
-    plt.plot(rmse_train_task_test, label="RMSE Loss Trained")
-    plt.title("Task Loss Comparison")
-    plt.xlabel("Day")
+    plt.plot(iterations, losses, label="Training Loss")
+    plt.title("Training Loss Over Iterations")
+    plt.xlabel("Iteration")
     plt.ylabel("Loss")
     plt.legend()
-    plt.savefig('task_loss.png')
 
-
-    plt.figure()
-    plt.plot(task_train_rmse_test, label="Task Loss Trained")
-    plt.plot(rmse_train_rmse_test, label = "MSE Loss Trained")
-    plt.title("RMSE Loss Comparison")
-    plt.xlabel("Day")
-    plt.ylabel("Loss")
-    plt.legend()
-    plt.savefig('rmse_loss.png')
+    plt.savefig('training_loss_plot.png')
 
 
 

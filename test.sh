@@ -17,3 +17,4 @@
 # The application(s) to execute along with its input arguments and options:
 
 python main.py
+python graph.py

@@ -145,7 +145,7 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         print("Error")
         return 
     
-    sim = Executor(covid_abm, pop_loader=LoadPopulation(astoria))
+    sim = Executor(covid, pop_loader=LoadPopulation(astoria))
     runner = sim.runner
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
@@ -155,7 +155,8 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
 
     learn_model = LearnableParams(3)
     opt = optim.Adam(learn_model.parameters(), lr=1e-3)
-    for i in range(1000):
+    loss_data = []
+    for i in range(10):
         print("Epoch", i)
         torch.autograd.set_detect_anomaly(True)
 
@@ -176,7 +177,14 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         # compute gradient
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
         opt.step()
+
+        loss_data.append([i, loss.item()])
         print("*********************")
+
+    with open("loss_data.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Iteration", "Loss"])
+        writer.writerows(loss_data) 
         # print("Gradients: ", learn_params_grad)
         # print("---"*10)
 
