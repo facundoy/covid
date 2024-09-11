@@ -57,7 +57,7 @@ class LearnableParams(nn.Module):
         super().__init__()
         self.device = device
         self.num_params = num_params
-        self.fc1 = nn.Linear(self.num_params, 64)
+        self.fc1 = nn.Linear(1, 64)
         self.fc2 = nn.Linear(64, 32)
         self.fc3 = nn.Linear(32, self.num_params)
         self.ReLU = nn.ReLU()
@@ -68,14 +68,14 @@ class LearnableParams(nn.Module):
                                        device=self.device)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self):
-        out = self.learnable_params
-        out = self.ReLU(self.fc1(out))
+    def forward(self, x):
+        out = self.ReLU(self.fc1(x))
         out = self.ReLU(self.fc2(out))
-        beta = self.fc3(out)
+        out = self.fc3(out)
         ''' bound output '''
-        out = self.min_values + (self.max_values -
-                                 self.min_values) * self.sigmoid(out)
+        # out = self.min_values + (self.max_values -
+        #                          self.min_values) * self.sigmoid(out)
+        out = self.sigmoid(out)
         return out
 
 def map_and_replace_tensor(input_string):
@@ -156,6 +156,7 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
     learn_model = LearnableParams(3)
     opt = optim.Adam(learn_model.parameters(), lr=1e-3)
     loss_data = []
+    x = torch.tensor([1.0], device=DEVICE)
     for i in range(10):
         print("Epoch", i)
         torch.autograd.set_detect_anomaly(True)
@@ -163,7 +164,9 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         opt.zero_grad()
 
         runner.reset()
-        debug_tensor = learn_model()[:, None]
+        debug_tensor = learn_model(x)
+        print("Debug tensor: ", debug_tensor)
+        debug_tensor = debug_tensor[:, None]
         
         # set parameters
         # TODO: turn it into a single function
