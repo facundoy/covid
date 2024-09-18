@@ -19,38 +19,6 @@ from agent_torch.populations import astoria
 from agent_torch.core.executor import Executor
 from agent_torch.core.dataloader import LoadPopulation
 
-def task_loss(Y_sched, Y_actual, params):
-    # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
-    #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
-    #         0.5 * (Y_sched - Y_actual)**2).mean()
-    under_loss = params["c_b"] * torch.clamp(Y_actual - Y_sched, min=0)
-    over_loss = params["c_h"] * torch.clamp(Y_sched - Y_actual, min=0)
-    under_loss_squared = params["q_b"] * torch.clamp((Y_actual - Y_sched)**2, min=0)
-    over_loss_squared = params["q_h"] * torch.clamp((Y_sched - Y_actual)**2, min=0)
-    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean() * len(under_loss)
-    return total_loss
-    # return mse_loss.mean()
-
-def task_test(Y_sched, Y_actual, params):
-    # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
-    #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
-    #         0.5 * (Y_sched - Y_actual)**2).mean()
-    under_loss = params["c_b"] * torch.clamp(Y_actual - Y_sched, min=0)
-    over_loss = params["c_h"] * torch.clamp(Y_sched - Y_actual, min=0)
-    under_loss_squared = params["q_b"] * torch.clamp((Y_actual - Y_sched)**2, min=0)
-    over_loss_squared = params["q_h"] * torch.clamp((Y_sched - Y_actual)**2, min=0)
-    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared)
-    return total_loss
-
-def rmse_loss(Y_sched, Y_actual):
-    error = (Y_actual - Y_sched)**2
-    error = torch.mean(error)
-    return torch.sqrt(error)
-
-def rmse_test(Y_sched, Y_actual):
-    error = (Y_actual - Y_sched)**2
-    return torch.sqrt(error.detach())
-
 
 class LearnableParams(nn.Module):
     def __init__(self, num_params, device='cpu'):
@@ -73,9 +41,9 @@ class LearnableParams(nn.Module):
         out = self.ReLU(self.fc2(out))
         out = self.fc3(out)
         ''' bound output '''
-        # out = self.min_values + (self.max_values -
-        #                          self.min_values) * self.sigmoid(out)
-        out = self.sigmoid(out)
+        out = self.min_values + (self.max_values -
+                                 self.min_values) * self.sigmoid(out)
+        # out = self.sigmoid(out)
         return out
 
 def map_and_replace_tensor(input_string):
@@ -135,7 +103,7 @@ def execute(runner, Y_actual, params, n_steps=28):
     total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean() * len(under_loss)
     return total_loss
 
-def eval_net(which, variables, params, save_folder, loss_func, ic):
+def eval_net(params, loss_func):
 
     if (loss_func == 'task'):
         print("Training wiht task loss")
@@ -145,8 +113,9 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         print("Error")
         return 
     
-    sim = Executor(covid, pop_loader=LoadPopulation(astoria))
+    sim = Executor(covid_abm, pop_loader=LoadPopulation(astoria))
     runner = sim.runner
+    print(runner.config)
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
 

@@ -123,10 +123,10 @@ class NewTransmission(SubstepTransitionMessagePassing):
             recover_indices = torch.randperm(len(susceptible_indices))[:num_recoveries]
             susceptible_to_recover = susceptible_indices[recover_indices]
             
-            updated_stages = current_stages.clone()
+            updated_stages = current_stages
             updated_stages[susceptible_to_recover] = self.RECOVERED_VAR
         else:
-            updated_stages = current_stages.clone()
+            updated_stages = current_stages
         
         return updated_stages
 
