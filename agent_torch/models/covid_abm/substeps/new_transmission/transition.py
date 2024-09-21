@@ -129,6 +129,20 @@ class NewTransmission(SubstepTransitionMessagePassing):
             updated_stages = current_stages
         
         return updated_stages
+    
+    def get_stage_proportions(self, current_stages):
+        total_people = len(current_stages)
+        stage_names = ["susceptible", "exposed", "infected", "recovered", "dead"]
+        
+        stage_counts = torch.stack([(current_stages == i).sum() for i in range(5)])
+        proportions = stage_counts.float() / total_people
+        
+        for i, proportion in enumerate(proportions):
+            print(f"Proportion of people in {stage_names[i]}: {proportion.item():.4f}")
+
+        print("------------")
+        
+        return proportions
 
     def forward(self, state, action=None):
         input_variables = self.input_variables
@@ -245,7 +259,9 @@ class NewTransmission(SubstepTransitionMessagePassing):
             t, agents_infected_time, newly_exposed_today
         )
 
-        updated_stages = self.recover_random_agents(updated_stages)
+        # updated_stages = self.recover_random_agents(updated_stages)
+
+        # self.get_stage_proportions(updated_stages)
 
         return {
             self.output_variables[0]: updated_stages,

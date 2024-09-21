@@ -9,6 +9,7 @@ from torchdiffeq import odeint
 import matplotlib.pyplot as plt
 import csv
 import pandas as pd
+import random
 
 import warnings
 warnings.simplefilter("ignore")
@@ -30,9 +31,9 @@ class LearnableParams(nn.Module):
         self.fc3 = nn.Linear(32, self.num_params)
         self.ReLU = nn.ReLU()
         self.learnable_params = nn.Parameter(torch.rand(num_params, device=self.device))
-        self.min_values = torch.tensor(2.0,
+        self.min_values = torch.tensor([1.5, 0, 0],
                                        device=self.device)
-        self.max_values = torch.tensor(3.5,
+        self.max_values = torch.tensor([6.5, 0.001, 100],
                                        device=self.device)
         self.sigmoid = nn.Sigmoid()
 
@@ -56,6 +57,12 @@ def map_and_replace_tensor(input_string):
     sub_func = parts[3]
     arg_type = parts[4]
     var_name = parts[5]
+
+    # print("function: ", function)
+    # print("index: ", index)
+    # print("sub_func: ", sub_func)
+    # print("arg_type: ", arg_type)
+    # print("var_name: ", var_name)
     
     def getter_and_setter(runner, new_value=None, mode_calibrate=True):
         substep_type = getattr(runner.initializer, function)
@@ -103,6 +110,32 @@ def execute(runner, Y_actual, params, n_steps=28):
     total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean() * len(under_loss)
     return total_loss
 
+def modify_initial_exposed(file_path, proportion):
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file)
+        rows = list(reader)
+    
+    header = rows[0]
+    data_rows = rows[1:]
+    
+    flat_data = [0.0 for row in data_rows for item in row]
+
+    total_numbers = len(flat_data)
+    num_ones_to_insert = int(total_numbers * proportion)
+    
+    indices = list(range(total_numbers))
+    ones_indices = random.sample(indices, num_ones_to_insert)
+    
+    for idx in ones_indices:
+        flat_data[idx] = 1.0
+
+    reshaped_data = [flat_data[i:i + len(data_rows[0])] for i in range(0, len(flat_data), len(data_rows[0]))]
+
+    with open(file_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        writer.writerows(reshaped_data)
+
 def eval_net(params, loss_func):
 
     if (loss_func == 'task'):
@@ -115,7 +148,6 @@ def eval_net(params, loss_func):
     
     sim = Executor(covid_abm, pop_loader=LoadPopulation(astoria))
     runner = sim.runner
-    print(runner.config)
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
 
@@ -123,10 +155,10 @@ def eval_net(params, loss_func):
     case_numbers = df['cases'].values
 
     learn_model = LearnableParams(3)
-    opt = optim.Adam(learn_model.parameters(), lr=1e-3)
+    opt = optim.Adam(learn_model.parameters(), lr=0.01)
     loss_data = []
     x = torch.tensor([1.0], device=DEVICE)
-    for i in range(10):
+    for i in range(500):
         print("Epoch", i)
         torch.autograd.set_detect_anomaly(True)
 
@@ -135,6 +167,9 @@ def eval_net(params, loss_func):
         runner.reset()
         debug_tensor = learn_model(x)
         print("Debug tensor: ", debug_tensor)
+        print("R0: ", debug_tensor[0])
+        print("Initial proportion of exposed: ", debug_tensor[1])
+        modify_initial_exposed('agent_torch/populations/astoria/disease_stages.csv', debug_tensor[1])
         debug_tensor = debug_tensor[:, None]
         
         # set parameters
