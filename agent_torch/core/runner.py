@@ -46,13 +46,15 @@ class Runner(nn.Module):
         self.state_trajectory = []
         self.state_trajectory.append([to_cpu(self.state)])
 
-    def step(self, num_steps=None):
+    def step(self, num_steps=None, vaccine_num=0):
         r"""
         Execute a single episode of the simulation
         """
 
         assert self.state is not None
         # self.reset_state_before_episode()
+
+        self.config["simulation_metadata"]["vaccine_num"] = vaccine_num
 
         if not num_steps:
             num_steps = self.config["simulation_metadata"]["num_steps_per_episode"]

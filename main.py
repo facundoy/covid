@@ -37,9 +37,9 @@ def main():
     for run in range(args.nRuns):
         print (run)
 
-        save_folder = os.path.join(base_save, str(run))
-        if not os.path.exists(save_folder):
-            os.makedirs(save_folder)
+        # save_folder = os.path.join(base_save, str(run))
+        # if not os.path.exists(save_folder):
+        #     os.makedirs(save_folder)
 
         params = {"n": 24, "c_ramp": 0.4, "gamma_under": 50, "gamma_over": 0.5, "c_b": 10, "c_h": 1, "q_b": 2, "q_h": 0.5}
             

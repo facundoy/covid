@@ -259,9 +259,10 @@ class NewTransmission(SubstepTransitionMessagePassing):
             t, agents_infected_time, newly_exposed_today
         )
 
-        # updated_stages = self.recover_random_agents(updated_stages)
+        num_vaccines = int(self.config["simulation_metadata"]["vaccine_num"])
+        updated_stages = self.recover_random_agents(updated_stages, num_recoveries= num_vaccines)
 
-        # self.get_stage_proportions(updated_stages)
+        self.get_stage_proportions(updated_stages)
 
         return {
             self.output_variables[0]: updated_stages,

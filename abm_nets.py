@@ -91,8 +91,8 @@ def map_and_replace_tensor(input_string):
 
     return getter_and_setter
 
-def execute(runner, Y_actual, params, n_steps=28):
-    runner.step(n_steps)
+def execute(runner, Y_actual, params, n_steps=28, vaccine_num=0):
+    runner.step(n_steps, vaccine_num=vaccine_num)
     labels = runner.state_trajectory[-1][-1]['environment']['daily_infected']
     print(labels)
 
@@ -169,6 +169,7 @@ def eval_net(params, loss_func):
         print("Debug tensor: ", debug_tensor)
         print("R0: ", debug_tensor[0])
         print("Initial proportion of exposed: ", debug_tensor[1])
+        sim.vaccine_num = debug_tensor[2]
         modify_initial_exposed('agent_torch/populations/astoria/disease_stages.csv', debug_tensor[1])
         debug_tensor = debug_tensor[:, None]
         
@@ -178,7 +179,7 @@ def eval_net(params, loss_func):
         tensorfunc = map_and_replace_tensor(input_string)
         current_tensor = tensorfunc(runner, debug_tensor, mode_calibrate=True)
         # execute runner
-        loss = execute(runner, case_numbers, params)
+        loss = execute(runner, case_numbers, params, vaccine_num=debug_tensor[2])
         print("Loss:", loss)
         loss.backward()
         # compute gradient
