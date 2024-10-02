@@ -22,7 +22,7 @@ from agent_torch.core.dataloader import LoadPopulation
 
 
 class LearnableParams(nn.Module):
-    def __init__(self, num_params, device='cpu'):
+    def __init__(self, num_params, device=DEVICE):
         super().__init__()
         self.device = device
         self.num_params = num_params
