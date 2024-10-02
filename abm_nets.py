@@ -26,9 +26,9 @@ class LearnableParams(nn.Module):
         super().__init__()
         self.device = device
         self.num_params = num_params
-        self.fc1 = nn.Linear(1, 64)
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, self.num_params)
+        self.fc1 = nn.Linear(1, 64).to(self.device)
+        self.fc2 = nn.Linear(64, 32).to(self.device)
+        self.fc3 = nn.Linear(32, self.num_params).to(self.device)
         self.ReLU = nn.ReLU()
         self.learnable_params = nn.Parameter(torch.rand(num_params, device=self.device))
         self.min_values = torch.tensor([1.5, 0, 0],
@@ -38,6 +38,7 @@ class LearnableParams(nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, x):
+        x = x.to(self.device)
         out = self.ReLU(self.fc1(x))
         out = self.ReLU(self.fc2(out))
         out = self.fc3(out)
@@ -94,6 +95,7 @@ def map_and_replace_tensor(input_string):
 def execute(runner, Y_actual, params, n_steps=28, vaccine_num=0):
     runner.step(n_steps, vaccine_num=vaccine_num)
     labels = runner.state_trajectory[-1][-1]['environment']['daily_infected']
+    labels = labels.to(DEVICE)
     print(labels)
 
     reshaped_labels = labels.view(4,7)
@@ -154,7 +156,7 @@ def eval_net(params, loss_func):
     df = pd.read_csv("astoria_data.csv", parse_dates = ["date"])
     case_numbers = df['cases'].values
 
-    learn_model = LearnableParams(3)
+    learn_model = LearnableParams(3, device=DEVICE)
     opt = optim.Adam(learn_model.parameters(), lr=0.01)
     loss_data = []
     x = torch.tensor([1.0], device=DEVICE)
