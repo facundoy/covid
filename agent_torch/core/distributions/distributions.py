@@ -20,7 +20,7 @@ class StraightThroughBernoulli(torch.autograd.Function):
     @staticmethod
     def backward(ctx, grad_output):
         result, p = ctx.saved_tensors
-        ws = torch.ones(result.shape)
+        ws = torch.ones(result.shape, device='cpu')
         return grad_output * ws
 
 

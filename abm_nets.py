@@ -31,9 +31,9 @@ class LearnableParams(nn.Module):
         self.fc3 = nn.Linear(32, self.num_params).to(self.device)
         self.ReLU = nn.ReLU()
         self.learnable_params = nn.Parameter(torch.rand(num_params, device=self.device))
-        self.min_values = torch.tensor([1.5, 0, 0],
+        self.min_values = torch.tensor([1.5, 1.5, 1.5, 1.5, 0, 0],
                                        device=self.device)
-        self.max_values = torch.tensor([6.5, 0.001, 100],
+        self.max_values = torch.tensor([6.5, 6.5, 6.5, 6.5, 100, 1],
                                        device=self.device)
         self.sigmoid = nn.Sigmoid()
 
@@ -92,8 +92,8 @@ def map_and_replace_tensor(input_string):
 
     return getter_and_setter
 
-def execute(runner, Y_actual, params, n_steps=28, vaccine_num=0):
-    runner.step(n_steps, vaccine_num=vaccine_num)
+def execute(runner, Y_actual, params, n_steps=28):
+    runner.step(n_steps)
     labels = runner.state_trajectory[-1][-1]['environment']['daily_infected']
     labels = labels.to(DEVICE)
     print(labels)
@@ -155,8 +155,9 @@ def eval_net(params, loss_func):
 
     df = pd.read_csv("astoria_data.csv", parse_dates = ["date"])
     case_numbers = df['cases'].values
+    case_numbers = torch.tensor(case_numbers, dtype=torch.float, device=DEVICE)
 
-    learn_model = LearnableParams(3, device=DEVICE)
+    learn_model = LearnableParams(6, device=DEVICE)
     opt = optim.Adam(learn_model.parameters(), lr=0.01)
     loss_data = []
     x = torch.tensor([1.0], device=DEVICE)
@@ -170,18 +171,30 @@ def eval_net(params, loss_func):
         debug_tensor = learn_model(x)
         print("Debug tensor: ", debug_tensor)
         print("R0: ", debug_tensor[0])
-        print("Initial proportion of exposed: ", debug_tensor[1])
-        sim.vaccine_num = debug_tensor[2]
-        modify_initial_exposed('agent_torch/populations/astoria/disease_stages.csv', debug_tensor[1])
+        print("Initial proportion of exposed: ", debug_tensor[5])
         debug_tensor = debug_tensor[:, None]
         
         # set parameters
         # TODO: turn it into a single function
         input_string = learnable_params[0][0]
+        print(input_string)
         tensorfunc = map_and_replace_tensor(input_string)
-        current_tensor = tensorfunc(runner, debug_tensor, mode_calibrate=True)
+        current_tensor = tensorfunc(runner, debug_tensor[:4], mode_calibrate=True)
+
+
+        input_string = learnable_params[1][0]
+        print(input_string)
+        tensorfunc = map_and_replace_tensor(input_string)
+        current_tensor = tensorfunc(runner, debug_tensor[5], mode_calibrate=True)
+
+        input_string = learnable_params[2][0]
+        print(input_string)
+        tensorfunc = map_and_replace_tensor(input_string)
+        current_tensor = tensorfunc(runner, debug_tensor[4], mode_calibrate=True)
+        
+
         # execute runner
-        loss = execute(runner, case_numbers, params, vaccine_num=debug_tensor[2])
+        loss = execute(runner, case_numbers, params)
         print("Loss:", loss)
         loss.backward()
         # compute gradient

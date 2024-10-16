@@ -2,6 +2,7 @@ import torch
 from torch_geometric.data import Data
 import torch.nn.functional as F
 import re
+import random
 
 from agent_torch.core.substep import SubstepTransitionMessagePassing
 from agent_torch.core.helpers import get_by_path
@@ -47,6 +48,7 @@ class NewTransmission(SubstepTransitionMessagePassing):
         integrals = torch.zeros_like(B_n)
         infected_idx = x_j[:, 2].bool()
         infected_times = t - x_j[infected_idx, 3] - 1
+        infected_times = infected_times.clamp(min=0, max=lam_gamma_integrals.size(0) - 1)
 
         integrals[infected_idx] = lam_gamma_integrals[infected_times.long()]
         edge_network_numbers = edge_attr[0, :]
@@ -143,6 +145,26 @@ class NewTransmission(SubstepTransitionMessagePassing):
         print("------------")
         
         return proportions
+    
+    def modify_initial_exposed(self, current_stages, proportion):
+        print(proportion)
+
+        for num in range(len(current_stages)):
+            if current_stages[num][0] == 1:
+                current_stages[num][0] = 0
+
+        total_numbers = len(current_stages)
+        num_ones_to_insert = int(total_numbers * proportion)
+        
+        indices = list(range(total_numbers))
+        ones_indices = random.sample(indices, num_ones_to_insert)
+        
+        for idx in ones_indices:
+            current_stages[idx][0] = 1.0
+
+        return current_stages
+
+        
 
     def forward(self, state, action=None):
         input_variables = self.input_variables
@@ -176,6 +198,14 @@ class NewTransmission(SubstepTransitionMessagePassing):
         current_stages = get_by_path(
             state, re.split("/", input_variables["disease_stage"])
         )
+
+        if (t == 0):
+            infected_proportion = self.calibrate_infected_proportion.to(self.device)
+            current_stages = self.modify_initial_exposed(current_stages, infected_proportion[0].item())
+
+            print("Infected proportion: ", infected_proportion)
+
+
         current_transition_times = get_by_path(
             state, re.split("/", input_variables["next_stage_time"])
         )
@@ -259,8 +289,11 @@ class NewTransmission(SubstepTransitionMessagePassing):
             t, agents_infected_time, newly_exposed_today
         )
 
-        num_vaccines = int(self.config["simulation_metadata"]["vaccine_num"])
-        updated_stages = self.recover_random_agents(updated_stages, num_recoveries= num_vaccines)
+        num_vaccines = self.calibrate_num_vaccines.to(self.device)
+        print(num_vaccines)
+        print(R_tensor)
+
+        updated_stages = self.recover_random_agents(updated_stages, int(num_vaccines[0].item()))
 
         self.get_stage_proportions(updated_stages)
 

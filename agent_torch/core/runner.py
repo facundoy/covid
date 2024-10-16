@@ -46,15 +46,13 @@ class Runner(nn.Module):
         self.state_trajectory = []
         self.state_trajectory.append([to_cpu(self.state)])
 
-    def step(self, num_steps=None, vaccine_num=0):
+    def step(self, num_steps=None):
         r"""
         Execute a single episode of the simulation
         """
 
         assert self.state is not None
         # self.reset_state_before_episode()
-
-        self.config["simulation_metadata"]["vaccine_num"] = vaccine_num
 
         if not num_steps:
             num_steps = self.config["simulation_metadata"]["num_steps_per_episode"]
@@ -63,6 +61,7 @@ class Runner(nn.Module):
             self.state["current_step"] = time_step
 
             for substep in self.config["substeps"].keys():
+                print("Substep: ", substep)
                 observation_profile, action_profile = {}, {}
 
                 for agent_type in self.config["substeps"][substep]["active_agents"]:

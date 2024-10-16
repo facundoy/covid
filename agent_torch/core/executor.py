@@ -9,7 +9,6 @@ from agent_torch.core.runner import Runner
 class BaseExecutor:
     def __init__(self, model):
         self.model = model
-        self.vaccine_num = 0
 
     def _get_runner(self, config):
         module_name = f"{self.model.__name__}.simulator"
@@ -47,7 +46,7 @@ class Executor(BaseExecutor):
         for episode in trange(num_episodes):
             # self.opt.zero_grad()
             self.runner.reset()
-            self.runner.step(num_steps_per_episode, vaccine_num=self.vaccine_num)
+            self.runner.step(num_steps_per_episode)
 
         if key is not None:
             self.simulation_values = self.runner.get_simulation_values(key)
