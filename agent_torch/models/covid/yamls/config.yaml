@@ -20,7 +20,7 @@ simulation_metadata:
   USE_GROUND_TRUTH_CASE_NUMBERS: false
   age_group_file: ${simulation_metadata.population_dir}/age.pickle
   calibration: true
-  device: cpu
+  device: CUDA
   disease_stage_file: ${simulation_metadata.population_dir}/disease_stages.csv
   infection_network_file: ${simulation_metadata.population_dir}/mobility_networks/0.csv
   initial_infection_ratio: 0.04
@@ -36,7 +36,7 @@ simulation_metadata:
   num_episodes: 5
   num_steps_per_episode: 28
   num_substeps_per_step: 2
-  population_dir: /Users/facu/Desktop/test/our_covid/agent_torch/populations/astoria
+  population_dir: /Users/amums/dl-research/covid/agent_torch/populations/astoria
   quarantine_days: 12
   test_ineligible_days: 2
   test_result_delay_days: 3

@@ -9,17 +9,16 @@ from agent_torch.data.census.generate.mobility_network import mobility_network_w
 
 
 class CensusDataLoader:
-    def __init__(self, use_parallel=False, n_cpu=8):
+    def __init__(self, use_parallel=False, n_cpu=8, population_dir=None):
         self.use_parallel = use_parallel
         self.n_cpu = n_cpu
-        self.population_dir = populations.__path__[0]
+        self.population_dir = population_dir
 
     def generate_basepop(
         self,
         input_data,
         region,
         save_path=None,
-        area_selector=None,
         export=True,
         num_individuals=None,
     ):
@@ -30,7 +29,6 @@ class CensusDataLoader:
             input_data (str): Path to the input data file.
             region (str): Name of the region.
             save_path (str, optional): Path to save the population dataframe as a pickle file. Defaults to None.
-            area_selector (callable, optional): Function to filter the input data based on area. Defaults to None.
             export (bool, optional): Whether to export the generated data. Defaults to True.
 
         Returns:
@@ -40,9 +38,8 @@ class CensusDataLoader:
             None
 
         """
-        self.population_df, self.address_df = base_pop_wrapper(
+        self.population_df = base_pop_wrapper(
             input_data,
-            area_selector=area_selector,
             use_parallel=self.use_parallel,
             n_cpu=self.n_cpu,
         )

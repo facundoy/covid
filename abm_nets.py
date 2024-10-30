@@ -18,6 +18,7 @@ from agent_torch.models import covid_abm
 from agent_torch.populations import astoria
 from agent_torch.core.executor import Executor
 from agent_torch.core.dataloader import LoadPopulation
+import custom_population as custpop
 
 def task_loss(Y_sched, Y_actual, params):
     # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
@@ -119,13 +120,14 @@ def map_and_replace_tensor(input_string):
 def execute(runner, Y_actual, params, n_steps=28):
     runner.step(n_steps)
     labels = runner.state_trajectory[-1][-1]['environment']['daily_infected']
-    print(labels)
+    # print(labels)
 
     reshaped_labels = labels.view(4,7)
     Y_sched = reshaped_labels.sum(dim = 1)
     Y_actual = torch.tensor(Y_actual, dtype=torch.float, device=DEVICE)
 
-    print(Y_sched)
+    print(f"Y_sched: {Y_sched}")
+    print(f"Y_actual: {Y_actual}")
 
 
     under_loss = params["c_b"] * torch.clamp(Y_actual - Y_sched, min=0)
@@ -138,25 +140,76 @@ def execute(runner, Y_actual, params, n_steps=28):
 def eval_net(which, variables, params, save_folder, loss_func, ic):
 
     if (loss_func == 'task'):
-        print("Training wiht task loss")
+        print("Training with task loss")
     elif (loss_func == 'rmse'):
         print("Training with RMSE loss")
     else: 
         print("Error")
         return 
     
-    sim = Executor(covid_abm, pop_loader=LoadPopulation(astoria))
+    print()
+    print("--------CUSTOM POPULATION TESTING--------")
+    sample_dir = os.path.join(os.getcwd(), 'census_scripts/data')
+    num_agents = 1000
+    county = '27003'
+    # area_selector = ['BK0101']
+    print("Customizing population")
+    custpop.customize(data_dir=sample_dir, results_dir='savePopData', county=county)
+    
+    quit() #Temporary quit for customize testing
+
+    initial_infection_ratio = 0.04
+    print("Initializing infections")
+    save_dir = os.path.join(pop_save_dir, region)
+    custpop._initialize_infections(num_agents, save_dir=save_dir, initial_infection_ratio=initial_infection_ratio)
+
+    quit()
+
+    # print()
+    # print("--------FOLKTABLES TESTING PART--------")
+    # data_source = ACSDataSource(survey_year='2018', horizon='1-Year', survey='person')
+    # acs_data = data_source.get_data(states=["AL"], download=True)
+    # features, label, group = ACSEmployment.df_to_numpy(acs_data)
+    
+
+
+
+    # # Set up the data source for 2020 data with a 1-year horizon for Michigan
+    # data_source = ACSDataSource(survey_year='2020', horizon='1-Year', survey='person')
+
+    # # Pull the data for Michigan (MI)
+    # acs_data = data_source.get_data(states=["MI"], download=True)
+
+    # # Extract features, labels, and group for the ACSEmployment task
+    # features, label, group = ACSEmployment.df_to_numpy(acs_data)
+
+    # # You can now use the features and labels for your machine learning tasks
+    # print(features[:5])  # Print first 5 feature rows
+    # print(label[:5])     # Print first 5 labels
+
+
+    # print(f"Features Type: {features.shape}")
+    # print()
+    # quit()
+
+    #Using custom_population to 
+    sim = Executor(covid, pop_loader=LoadPopulation(astoria))
     runner = sim.runner
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
 
     df = pd.read_csv("astoria_data.csv", parse_dates = ["date"])
     case_numbers = df['cases'].values
+    # training_data = variables['Y_train']
+
+    loss_array = np.array([])
 
     learn_model = LearnableParams(3)
     opt = optim.Adam(learn_model.parameters(), lr=1e-3)
-    for i in range(1000):
-        print("Epoch", i)
+    epochs = 1
+
+    for epoch in range(epochs):
+        print("Epoch", epoch)
         torch.autograd.set_detect_anomaly(True)
 
         opt.zero_grad()
@@ -171,12 +224,32 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         current_tensor = tensorfunc(runner, debug_tensor, mode_calibrate=True)
         # execute runner
         loss = execute(runner, case_numbers, params)
-        print("Loss:", loss)
+        # print("Loss:", loss)
         loss.backward()
         # compute gradient
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
         opt.step()
+
+        print(f"Loss: {loss}, Loss data type: {type(loss)}")
+        loss_np = loss.detach().cpu().numpy()  # Convert to NumPy array
+        loss_array = np.append(loss_array, loss_np)
+        print(f"Loss_array: {loss_array}")
+        # print(f"Loss after backward: {loss}")
+
+        # Print gradients
+        # for name, param in learn_model.named_parameters():
+        #     print(f"Gradient for {name}: {param.grad}")
+
         print("*********************")
         # print("Gradients: ", learn_params_grad)
         # print("---"*10)
+    
+    iters = np.arange(1, epochs + 1)
+    print(f"Iters.shape: {iters.shape}, Shape of loss array: {loss_array.shape}")
+    assert iters.shape == loss_array.shape
+    data = np.column_stack((iters, loss_array))
+    with open("training_loss.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Iteration', 'Task Loss'])
+        writer.writerows(data)
 

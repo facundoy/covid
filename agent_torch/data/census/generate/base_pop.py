@@ -26,14 +26,14 @@ def get_index(value, age_ranges):
 
 
 @ray.remote
-def create_base_pop_remote(df_age_gender, df_ethnicity, age, area):
-    return create_base_pop(df_age_gender, df_ethnicity, age, area)
+def create_base_pop_remote(df_ages, df_occupations, age):
+    return create_base_pop(df_ages, df_occupations, age)
 
 
-def create_base_pop(df_age_gender, df_ethnicity, age, area):
+def create_base_pop(df_ages, df_occupations, age):
     population = []
     # number_of_individuals = area_data[number_of_individuals]
-    age_gender_data = df_age_gender[df_age_gender["area"] == area]
+    ages_data = df_ages
     age_gender_data = age_gender_data[age_gender_data["age"] == age]
     ethnicity_data = df_ethnicity[df_ethnicity["area"] == area]
     region = age_gender_data["region"].values[0]
@@ -83,15 +83,14 @@ def create_base_pop(df_age_gender, df_ethnicity, age, area):
 
 def base_pop_wrapper(
     input_data,
-    area_selector=None,
     use_parallel=False,
     n_cpu=8,
 ) -> DataFrame:
 
-    df_age_gender = input_data["age_gender"]
-    df_ethnicity = input_data["ethnicity"]
+    df_ages = input_data["ages"]
+    df_occupations = input_data["occupations"]
 
-    start_time = datetime.utcnow()
+    # start_time = datetime.utcnow()
 
     if use_parallel:
         ray.init(num_cpus=n_cpu, include_dashboard=False)
@@ -133,9 +132,9 @@ def base_pop_wrapper(
     total_mins = (end_time - start_time).total_seconds() / 60.0
 
     # create an empty address dataset
-    base_address = DataFrame(columns=["type", "name", "latitude", "longitude"])
+    # base_address = DataFrame(columns=["type", "name", "latitude", "longitude"])
 
     logger.info(f"Processing time (base population): {total_mins}")
 
     # Convert the population to a DataFrame
-    return DataFrame(population), base_address
+    return DataFrame(population)
