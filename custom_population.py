@@ -95,11 +95,11 @@ def customize(data_dir, results_dir, county, num_agents = None):
 
 
     #Load age group data
-    AGE_GROUPS_DATA = pd.read_csv(age_groups_data_path)
+    AGE_GROUPS_DATA = pd.read_csv(age_groups_data_path, encoding='ISO-8859-1')
     # Load household data
-    HOUSEHOLD_DATA = pd.read_csv(household_sizes_data_path)
+    HOUSEHOLD_DATA = pd.read_csv(household_sizes_data_path, encoding='ISO-8859-1')
     #load occupation data
-    OCCUPATION_DATA = pd.read_csv(occupations_data_path)
+    OCCUPATION_DATA = pd.read_csv(occupations_data_path, encoding='ISO-8859-1')
 
     #Create list of ages, household, and occupation stats
     ages_list = []
@@ -108,13 +108,19 @@ def customize(data_dir, results_dir, county, num_agents = None):
 
     #Create list of random ages in order of age groups
     for index, row in AGE_GROUPS_DATA.iterrows():
-        lower = None
-        upper = None
+        lower = -1
+        upper = -1
         age_group = row['Age']
         match = re.findall(r'\d+', age_group)
         # Convert extracted strings to integers
-        if len(match) == 2:  # Ensure there are two numbers found
+        if len(match) == 1:
+            lower = int(match[0])
+            assert lower == 80
+            upper = 100
+        elif len(match) == 2:  # Ensure there are two numbers found
             lower, upper = int(match[0]), int(match[1])
+        
+        assert lower >= 0 and lower <= 80 and upper >= 9 and upper <= 100
 
         num_age_group = int(row['Number'])
         for i in range(num_age_group):
