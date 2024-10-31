@@ -3,6 +3,7 @@ from torch_geometric.data import Data
 import torch.nn.functional as F
 import re
 import random
+import math
 
 from agent_torch.core.substep import SubstepTransitionMessagePassing
 from agent_torch.core.helpers import get_by_path
@@ -30,6 +31,10 @@ class NewTransmission(SubstepTransitionMessagePassing):
         self.st_bernoulli = StraightThroughBernoulli.apply
 
         self.calibration_mode = self.config['simulation_metadata']['calibration']
+
+        self.social_distancing_schedule = self.generate_social_distancing_schedule(
+            initial_factor=1.0, lambda_=0.01, total_steps=self.num_timesteps
+        ).to(self.device)
 
     def _lam(
         self,
@@ -163,12 +168,23 @@ class NewTransmission(SubstepTransitionMessagePassing):
             current_stages[idx][0] = 1.0
 
         return current_stages
+    
+    def generate_social_distancing_schedule(self, initial_factor=1.0, lambda_=0.01, total_steps=28):
+        social_distancing_schedule = []
+        current_factor = initial_factor
+        
+        for t in range(total_steps):
+            current_factor = current_factor * math.exp(-lambda_)
+            social_distancing_schedule.append(current_factor)
+        
+        return torch.tensor(social_distancing_schedule, dtype=torch.float32)
 
         
 
     def forward(self, state, action=None):
         input_variables = self.input_variables
         t = int(state["current_step"])
+        social_distancing_factor = self.social_distancing_schedule[t]
         time_step_one_hot = self._generate_one_hot_tensor(t, self.num_timesteps)
 
         week_id = int(t / 7)
@@ -179,6 +195,7 @@ class NewTransmission(SubstepTransitionMessagePassing):
         else:
             R_tensor = self.learnable_args["R2"]  # tensor of size NUM_WEEK
         R = (R_tensor * week_one_hot).sum()
+        R = R * social_distancing_factor
 
         SFSusceptibility = get_by_path(
             state, re.split("/", input_variables["SFSusceptibility"])
