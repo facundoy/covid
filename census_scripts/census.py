@@ -65,7 +65,7 @@ def obtain_household_size_distribution(county_fips, census_api_key):
         # Create new columns based on the dictionary mapping
         print(f"Obtaining Household Data")
         for new_column, formula in household_size_acs_var_map.items():
-            print(f"{new_column}/6")
+            # print(f"{new_column}/6")
             df[new_column] = df.eval(formula)
     else:
         # The request failed, so print the error message
@@ -152,10 +152,10 @@ def obtain_age_distribution(county_fips, census_api_key):
         # convert all columns to numeric
         df = df.apply(pd.to_numeric, errors='ignore')
         # Create new columns based on the dictionary mapping
-        print('-------------------')
+        # print('-------------------')
         print(f"Obtaining Age Data")
         for new_column, formula in age_acs_var_map.items():
-            print(f"{new_column}/6")
+            # print(f"{new_column}/6")
             df[new_column] = df.eval(formula)
     else:
         # The request failed, so print the error message
@@ -243,10 +243,10 @@ def obtain_occupation_distribution(county_fips, census_api_key):
     df = [['Occupation', 'Number']]
     # convert example api.census.gov/data/2017/ecnbasic?get=NAICS2017_LABEL,EMP,NAME,GEO_ID&for=us:*&NAICS2017=54&key=YOUR_KEY_GOES_HERE
     base_url = "https://api.census.gov/data/2017/ecnbasic"
-    print('-------------------')
+    # print('-------------------')
     print(f"Obtaining Occupation Data")
     for naics_sector in inverted_naics_sectors:
-        print(naics_sector)
+        # print(naics_sector)
         # print('-------------------')
         for naics_sector_code in inverted_naics_sectors[naics_sector]:
             # print(naics_sector, naics_sector_code)
@@ -263,7 +263,7 @@ def obtain_occupation_distribution(county_fips, census_api_key):
                 df.append(row)
             else:
                 # The request failed, so print the error message
-                print(response.status_code, response.reason)
+                # print(response.status_code, response.reason)
                 row = [naics_sector, 0]
                 df.append(row)
 
@@ -584,17 +584,38 @@ if __name__ == "__main__":
     # 27051 is Grant County, MN
     # 27053 is Hennepin County, MN
 
-    for county_fips in [
-            "27109", "27053", "27003", "27049", "27061", "27029", "27171",
-            "27091", "27139", "27049", "27051", "27053", '27081', '27041', 
-            '27155', '27167', '27019', '27065', '27031', '27045', '27133', '27089'
-    ]:
+
+    # List of Michigan county codes
+    michigan_county_codes = [
+        "001", "003", "005", "007", "009", "011", "013", "015", "017", "019",
+        "021", "023", "025", "027", "029", "031", "033", "035", "037", "039",
+        "041", "043", "045", "047", "049", "051", "053", "055", "057", "059",
+        "061", "063", "065", "067", "069", "071", "073", "075", "077", "079",
+        "081", "083", "085", "087", "089", "091", "093", "095", "097", "099",
+        "101", "103", "105", "107", "109", "111", "113", "115", "117", "119",
+        "121", "123", "125", "127", "129", "131", "133", "135", "137", "139",
+        "141", "143", "145", "147", "149", "151", "153", "155", "157", "159",
+        "161", "163", "165"
+    ]
+
+    # Create a list of Michigan FIPS codes
+    michigan_fips_codes = ["26" + code for code in michigan_county_codes]
+
+    minnesota_fips_codes = [
+        "27109", "27053", "27003", "27049", "27061", "27029", "27171",
+        "27091", "27139", "27049", "27051", "27053", '27081', '27041', 
+        '27155', '27167', '27019', '27065', '27031', '27045', '27133', '27089'
+    ]
+
+    for county_fips in michigan_fips_codes:
         # create directory if it does not exist
         if not os.path.exists(f"./data/{county_fips}"):
             os.makedirs(f"./data/{county_fips}")
+        print(f'Creating data for {county_fips}')
         obtain_household_size_distribution(county_fips, CENSUS_API_KEY)
         obtain_age_distribution(county_fips, CENSUS_API_KEY)
         obtain_occupation_distribution(county_fips, CENSUS_API_KEY)
+        print()
 
     # no need the rest of the code for now
     quit()

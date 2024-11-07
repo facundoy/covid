@@ -61,7 +61,7 @@ def _initialize_infections(num_agents, save_dir=None, initial_infection_ratio=0.
         if num_tries >= 1000:
             raise Exception("failed to create disease stages file")
 
-def customize(data_dir, results_dir, county, num_agents = None):
+def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
     #My implementation
 
     #------------------------MANAGING DATA PATHS------------------------
@@ -80,7 +80,7 @@ def customize(data_dir, results_dir, county, num_agents = None):
         
     #Set data directories:
     age_groups_data_path = os.path.join(county_data_dir, 'agents_ages.csv')
-    household_sizes_data_path = os.path.join(county_data_dir, 'agents_household_sizes.pkl')
+    household_sizes_data_path = os.path.join(county_data_dir, 'agents_household_sizes.csv')
     occupations_data_path = os.path.join(county_data_dir, 'agents_occupations.csv')
 
     # Check if each file path exists
@@ -100,6 +100,7 @@ def customize(data_dir, results_dir, county, num_agents = None):
     HOUSEHOLD_DATA = pd.read_csv(household_sizes_data_path, encoding='ISO-8859-1')
     #load occupation data
     OCCUPATION_DATA = pd.read_csv(occupations_data_path, encoding='ISO-8859-1')
+
 
     #Create list of ages, household, and occupation stats
     ages_list = []
@@ -131,8 +132,10 @@ def customize(data_dir, results_dir, county, num_agents = None):
     for index, row in HOUSEHOLD_DATA.iterrows():
         houseSize = row['Household Size']
         num_household_size = int(row['Number'])
-        for i in range(num_household_size):
+        houseSum = houseSize * num_household_size
+        for i in range(houseSum):
             household_list.append(houseSize)
+    
             
     #Create list of occupations in order
     for index, row in OCCUPATION_DATA.iterrows():
@@ -146,8 +149,32 @@ def customize(data_dir, results_dir, county, num_agents = None):
     np.random.shuffle(household_list)
     np.random.shuffle(occupations_list)
 
+    # print(f'Size of Ages List: {len(ages_list)}')
+    # print(f'Size of Household List: {len(household_list)}')
+    # print(f'Size of Occupations List: {len(occupations_list)}')
+    # quit()
+
+
+    #SAVE RANDOMLY GENERATED DATA
+    # Define the output file path
+    output_file_path_str = county + '_population_data.txt'
+    output_file_path = os.path.join(rand_gen_dir, output_file_path_str)
+
+    # Write each list to a separate line in the text file
+    with open(output_file_path, 'w') as file:
+        file.write("Ages: " + ", ".join(map(str, ages_list)) + "\n")
+        file.write("Household Sizes: " + ", ".join(map(str, household_list)) + "\n")
+        file.write("Occupations: " + ", ".join(occupations_list) + "\n")
+
+    print(f"County data summary saved to {output_file_path}")
+
+
+    # quit()
+
     #------------------------EVENING OUT POPULATION SIZES OF DATASETS------------------------
-    largest_pop = cntppl.largest_total_population(data_path=data_dir)
+    largest_pop = cntppl.largest_total_population(data_path=county_data_dir)
+
+    # print(largest_pop)
 
     if largest_pop == "Occupation":
         print("Invalid data, occupation data larger than age/household data!")
@@ -168,35 +195,59 @@ def customize(data_dir, results_dir, county, num_agents = None):
     
     assert len(ages_list) == len(household_list)
     pop_size = len(ages_list)
+
+    print(f'Population size = {pop_size}')
+
+    # quit()
     
 
     #------------------------CREATING FINAL DATAFRAME------------------------
     # Create an empty DataFrame with the specified columns
     df = pd.DataFrame(columns=["ID", "Age", "Household Size", "Occupations"])
 
-    #Create population of ages and household sizes
-    for i in range(pop_size):
-        age = ages_list[i]
-        household_size = household_list[i]
-        row_data = [
-            i + 1,
-            age,
-            household_size,
-            None
-        ]
+    # Generate data as lists
+    ids = range(1, pop_size + 1)
+    occupations = [None] * pop_size
 
-        df.iloc[i] = row_data
+    # Create DataFrame using the lists directly
+    df = pd.DataFrame({
+        "ID": ids,
+        "Age": ages_list,
+        "Household Size": household_list,
+        "Occupations": occupations
+    })
+
+    # quit()
+
+
+    #THIS METHOD BELOW IS TOO SLOW
+
+    # #Create population of ages and household sizes
+    # for i in range(pop_size):
+    #     age = ages_list[i]
+    #     household_size = household_list[i]
+    #     row_data = [
+    #         i + 1,
+    #         age,
+    #         household_size,
+    #         None
+    #     ]
+
+    #     # Append the row to the DataFrame
+    #     df = df.append(row_data, ignore_index=True)
+    #     if i % 10 == 0:
+    #         print(f'i: {i}')
 
     #------------------------RANDOMLY ASSIGNING OCCUPATIONS TO POPULATION------------------------
     # Count people with age between 18 and 65
-    eligible_count = df[(df["Age"] >= 18) and (df["Age"] <= 65)].shape[0]
+    eligible_count = df[(df["Age"] >= 18) & (df["Age"] <= 65)].shape[0]
 
     # Check if there are enough eligible people for the occupations
     if eligible_count < len(occupations_list):
         raise ValueError("Not enough people between ages 18 and 65 to assign all occupations") 
     
     # Assign occupations to eligible people
-    eligible_indices = df[(df["Age"] >= 18) & (df["Age"] <= 65)].index
+    eligible_indices = df[(df["Age"] >= 18) & (df["Age"] <= 65)].index.tolist()
 
     # Shuffle the eligible indices to ensure random assignment
     np.random.shuffle(eligible_indices)
@@ -216,6 +267,9 @@ def customize(data_dir, results_dir, county, num_agents = None):
 
     # Save the DataFrame as a CSV file
     df.to_csv(file_path, index=False)  # Set index=False to avoid saving row indices
+
+    print(f'Population data saved for county {county} to {file_path}')
+    print()
 
     return
     #--------------------------------------------------------------------------------------------------
