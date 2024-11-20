@@ -9,6 +9,8 @@ import numpy as np
 from numpy.random import choice
 import count_people as cntppl
 import re
+import yaml
+# from initialize_agents_networks import create_and_write_occupation_networks, create_and_write_household_network
 
 # import ray
 # ray.init(address='auto')
@@ -256,9 +258,9 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
     for i, occupation in zip(eligible_indices, occupations_list):
         df.loc[i, "Occupations"] = occupation
 
-    # Assign "Unemployed" to remaining eligible people without an occupation
+    # Assign "" to remaining eligible people without an occupation
     for i in eligible_indices[len(occupations_list):]:
-        df.loc[i, "Occupations"] = "Unemployed"
+        df.loc[i, "Occupations"] = ""
     
 
     #Convert dataframe to csv and store in results_dir
@@ -270,6 +272,52 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
 
     print(f'Population data saved for county {county} to {file_path}')
     print()
+
+    #------------------------GENERATING COUNTY YAML FILES------------------------ 
+    print(f"Generating yaml file for county {county}...")
+
+    age_ix_list = [0] * 9
+    house_sizes_list = [0] * 6
+    assert pop_size == len(ages_list) and pop_size == len(household_list) and pop_size == len(occupations)
+    for i in range(pop_size):
+        #Ages ix
+        index = ages_list[i] // 10
+        if index == 9 or index == 10:
+            index = 8
+        age_ix_list[index] += 1
+        #Household sizes
+        index = household_list[i]
+        #CONTINUE
+
+    age_ix_sum = 0
+    for i in range(len(age_ix_list)):
+        age_ix_sum += age_ix_list[i]
+
+    data = {
+        'county': county,
+        'age_ix_pop_dict': {
+            0: age_ix_list[0],
+            1: age_ix_list[1],
+            2: age_ix_list[2],
+            3: age_ix_list[3],
+            4: age_ix_list[4],
+            5: age_ix_list[5],
+            6: age_ix_list[6],
+            7: age_ix_list[7],
+            8: age_ix_list[8]
+        },
+        'age_ix_prob_list': [
+            float(age_ix_list[0]) / float(age_ix_sum),
+            float(age_ix_list[1]) / float(age_ix_sum),
+            float(age_ix_list[2]) / float(age_ix_sum),
+            float(age_ix_list[3]) / float(age_ix_sum),
+            float(age_ix_list[4]) / float(age_ix_sum),
+            float(age_ix_list[5]) / float(age_ix_sum),
+            float(age_ix_list[6]) / float(age_ix_sum),
+            float(age_ix_list[7]) / float(age_ix_sum),
+            float(age_ix_list[8]) / float(age_ix_sum)
+        ]
+    }
 
     return
     #--------------------------------------------------------------------------------------------------

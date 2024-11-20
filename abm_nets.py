@@ -21,6 +21,8 @@ from agent_torch.core.executor import Executor
 from agent_torch.core.dataloader import LoadPopulation
 import custom_population as custpop
 
+from gen_mob_nw import generate_mobility_networks
+
 def task_loss(Y_sched, Y_actual, params):
     # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
     #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
@@ -194,6 +196,9 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
                 # Customize population for county
                 print(f'Customizing population for county {folder_name}')
                 custpop.customize(data_dir=data_dir, results_dir=results_dir, rand_gen_dir=rand_gen_dir, county=county)
+    
+    #TEST MOBILITY NETWORKS
+    generate_mobility_networks(state_abbrev=state_abbrev, county="26007", output_dir="generated_networks", num_steps=10)
 
     
     quit() #Temporary quit for customize testing
