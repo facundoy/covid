@@ -152,6 +152,11 @@ def eval_net(params, loss_func):
     runner = sim.runner
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
+    
+    #Sanity check for cuda
+    # print(torch.__version__)
+    # print(torch.cuda.is_available())
+    # print("")
 
     df = pd.read_csv("astoria_data.csv", parse_dates = ["date"])
     case_numbers = df['cases'].values
@@ -161,7 +166,7 @@ def eval_net(params, loss_func):
     opt = optim.Adam(learn_model.parameters(), lr=0.01)
     loss_data = []
     x = torch.tensor([1.0], device=DEVICE)
-    for i in range(500):
+    for i in range(1):
         print("Epoch", i)
         torch.autograd.set_detect_anomaly(True)
 
@@ -180,6 +185,11 @@ def eval_net(params, loss_func):
         print(input_string)
         tensorfunc = map_and_replace_tensor(input_string)
         current_tensor = tensorfunc(runner, debug_tensor[:4], mode_calibrate=True)
+        
+        #Sanity check for cuda 
+        # print(f"Allocated: {torch.cuda.memory_allocated()} bytes")
+        # print(f"Cached: {torch.cuda.memory_reserved()} bytes")
+
 
 
         input_string = learnable_params[1][0]
@@ -210,4 +220,3 @@ def eval_net(params, loss_func):
         writer.writerows(loss_data) 
         # print("Gradients: ", learn_params_grad)
         # print("---"*10)
-
