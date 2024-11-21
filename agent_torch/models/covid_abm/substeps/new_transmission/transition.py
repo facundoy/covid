@@ -4,6 +4,7 @@ import torch.nn.functional as F
 import re
 import random
 import math
+# import nvidia_smi
 
 from agent_torch.core.substep import SubstepTransitionMessagePassing
 from agent_torch.core.helpers import get_by_path
@@ -288,6 +289,14 @@ class NewTransmission(SubstepTransitionMessagePassing):
         # potentially_exposed_today = potentially_exposed_today * (
         #     1.0 - will_isolate.squeeze()
         # )
+
+        # nvidia_smi.nvmlInit()
+        # deviceCount = nvidia_smi.nvmlDeviceGetCount()
+        
+        # handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        # util = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
+        # mem = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        # print(f"Mem Free: {mem.free/1024**2:5.2f}MB / {mem.total/1024**2:5.2f}MB | gpu-util: {util.gpu/100.0:3.1%} | gpu-mem: {util.memory/100.0:3.1%} |")
 
         newly_exposed_today = (
             current_stages == self.SUSCEPTIBLE_VAR

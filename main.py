@@ -16,7 +16,7 @@ except ImportError: pass
 import torch
 
 
-import model_classes, new_nets, abm_nets
+import model_classes, abm_nets
 
 from constants import *
 
