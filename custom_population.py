@@ -201,7 +201,23 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
     print(f'Population size = {pop_size}')
 
     # quit()
-    
+
+    #------------------------ASSIGNING HOUSEHOLD IDS------------------------
+    household_ids = [0] * len(household_list)
+    houseSizes = np.arange(1, 7)
+    household_id = 0
+    for houseSize in houseSizes:
+        houseCounter = 0
+        household_id += 1   # To assert that if numPplInHouseholdSize % HouseholdSize != 0, the incorrect household_id doesn't carry over (we can allow jumps in household_id as long as they're distinct)
+        for i in range(len(household_list)):
+            if household_list[i] == houseSize:
+                household_ids[i] = household_id
+                houseCounter += 1
+                if houseCounter == houseSize:
+                    houseCounter = 0
+                    household_id += 1
+                
+    assert all(x != 0 for x in household_ids)
 
     #------------------------CREATING FINAL DATAFRAME------------------------
     # Create an empty DataFrame with the specified columns
@@ -216,7 +232,8 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
         "ID": ids,
         "Age": ages_list,
         "Household Size": household_list,
-        "Occupations": occupations
+        "Occupations": occupations,
+        "Household ID": household_ids
     })
 
     # quit()

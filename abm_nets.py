@@ -198,6 +198,8 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
                 custpop.customize(data_dir=data_dir, results_dir=results_dir, rand_gen_dir=rand_gen_dir, county=county)
     
     #TEST MOBILITY NETWORKS
+    print()
+    print(f"Generating mobility network...")
     generate_mobility_networks(state_abbrev=state_abbrev, county="26007", output_dir="generated_networks", num_steps=10)
 
     

@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 import os
 from sim_gen_utils import custom_watts_strogatz_graph
+from tqdm import tqdm
 
 
 def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
@@ -25,7 +26,7 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
 
     # Group individuals by occupation
     occupation_groups = {
-        occ: individuals_with_occupations[individuals_with_occupations['OccupationID'] == occ].index.tolist()
+        occ: individuals_with_occupations[individuals_with_occupations['OccupationID'] == occ]['ID'].tolist()
         for occ in occupation_to_ix.values()
     }
 
@@ -33,13 +34,15 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
     occupation_population = Counter(individuals_with_occupations['OccupationID'])
 
     # Group individuals by household
-    households = individuals.groupby('Household Size').groups
+    households = individuals.groupby('Household ID').groups
 
     # Create output directory
     os.makedirs(output_dir, exist_ok=True)
     
-    for t in range(num_steps):
-        for occ, agents in occupation_groups.items():
+    # Outer loop for time steps with tqdm
+    for t in tqdm(range(num_steps), desc="Time Steps Progress"):
+        # Inner loop for occupation groups with tqdm
+        for occ, agents in tqdm(occupation_groups.items(), desc=f"Occupation Groups Progress (Step {t})", leave=False):
             n_agents = len(agents)
             if n_agents > 1:  # Avoid empty or trivial networks
                 mu = occupation_params.loc[occupation_names[occ], 'mu']
@@ -57,15 +60,16 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
                 id_mapping = {i: agents[i] for i in range(n_agents)}
                 G = nx.relabel_nodes(G, id_mapping)
 
-                # Add household-based edges
-                for household, members in households.items():
-                    # Intersect household members with occupation members
-                    household_occ_members = set(members).intersection(agents)
-                    household_occ_members = list(household_occ_members)
-                    if len(household_occ_members) > 1:
-                        for i in range(len(household_occ_members)):
-                            for j in range(i + 1, len(household_occ_members)):
-                                G.add_edge(household_occ_members[i], household_occ_members[j])
+                # Add edges for agents in the same household
+                for household_id, members in households.items():
+                    # Convert dataframe indices to actual agent IDs
+                    household_members = individuals.loc[members, 'ID'].tolist()
+                    
+                    # Add edges between all pairs of household members
+                    if len(household_members) > 1:  # Skip single-member households
+                        for i in range(len(household_members)):
+                            for j in range(i + 1, len(household_members)):
+                                G.add_edge(household_members[i], household_members[j])
                 
                 # Save network to file
                 outfile = os.path.join(output_dir, f"{occupation_names[occ]}_step_{t}.csv")
