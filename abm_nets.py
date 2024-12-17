@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import csv
 import pandas as pd
 import re
+import random
 
 import warnings
 warnings.simplefilter("ignore")
@@ -23,63 +24,32 @@ import custom_population as custpop
 
 from gen_mob_nw import generate_mobility_networks
 
-def task_loss(Y_sched, Y_actual, params):
-    # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
-    #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
-    #         0.5 * (Y_sched - Y_actual)**2).mean()
-    under_loss = params["c_b"] * torch.clamp(Y_actual - Y_sched, min=0)
-    over_loss = params["c_h"] * torch.clamp(Y_sched - Y_actual, min=0)
-    under_loss_squared = params["q_b"] * torch.clamp((Y_actual - Y_sched)**2, min=0)
-    over_loss_squared = params["q_h"] * torch.clamp((Y_sched - Y_actual)**2, min=0)
-    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean() * len(under_loss)
-    return total_loss
-    # return mse_loss.mean()
-
-def task_test(Y_sched, Y_actual, params):
-    # return (params["gamma_under"] * torch.clamp(Y_actual - Y_sched, min=0) + 
-    #         params["gamma_over"] * torch.clamp(Y_sched - Y_actual, min=0) + 
-    #         0.5 * (Y_sched - Y_actual)**2).mean()
-    under_loss = params["c_b"] * torch.clamp(Y_actual - Y_sched, min=0)
-    over_loss = params["c_h"] * torch.clamp(Y_sched - Y_actual, min=0)
-    under_loss_squared = params["q_b"] * torch.clamp((Y_actual - Y_sched)**2, min=0)
-    over_loss_squared = params["q_h"] * torch.clamp((Y_sched - Y_actual)**2, min=0)
-    total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared)
-    return total_loss
-
-def rmse_loss(Y_sched, Y_actual):
-    error = (Y_actual - Y_sched)**2
-    error = torch.mean(error)
-    return torch.sqrt(error)
-
-def rmse_test(Y_sched, Y_actual):
-    error = (Y_actual - Y_sched)**2
-    return torch.sqrt(error.detach())
-
 
 class LearnableParams(nn.Module):
-    def __init__(self, num_params, device='cpu'):
+    def __init__(self, num_params, device=DEVICE):
         super().__init__()
         self.device = device
         self.num_params = num_params
-        self.fc1 = nn.Linear(self.num_params, 64)
-        self.fc2 = nn.Linear(64, 32)
-        self.fc3 = nn.Linear(32, self.num_params)
+        self.fc1 = nn.Linear(1, 64).to(self.device)
+        self.fc2 = nn.Linear(64, 32).to(self.device)
+        self.fc3 = nn.Linear(32, self.num_params).to(self.device)
         self.ReLU = nn.ReLU()
         self.learnable_params = nn.Parameter(torch.rand(num_params, device=self.device))
-        self.min_values = torch.tensor(2.0,
+        self.min_values = torch.tensor([1.5, 1.5, 1.5, 1.5, 0, 0],
                                        device=self.device)
-        self.max_values = torch.tensor(3.5,
+        self.max_values = torch.tensor([6.5, 6.5, 6.5, 6.5, 100, 1],
                                        device=self.device)
         self.sigmoid = nn.Sigmoid()
 
-    def forward(self):
-        out = self.learnable_params
-        out = self.ReLU(self.fc1(out))
+    def forward(self, x):
+        x = x.to(self.device)
+        out = self.ReLU(self.fc1(x))
         out = self.ReLU(self.fc2(out))
-        beta = self.fc3(out)
+        out = self.fc3(out)
         ''' bound output '''
         out = self.min_values + (self.max_values -
                                  self.min_values) * self.sigmoid(out)
+        # out = self.sigmoid(out)
         return out
 
 def map_and_replace_tensor(input_string):
@@ -92,6 +62,12 @@ def map_and_replace_tensor(input_string):
     sub_func = parts[3]
     arg_type = parts[4]
     var_name = parts[5]
+
+    # print("function: ", function)
+    # print("index: ", index)
+    # print("sub_func: ", sub_func)
+    # print("arg_type: ", arg_type)
+    # print("var_name: ", var_name)
     
     def getter_and_setter(runner, new_value=None, mode_calibrate=True):
         substep_type = getattr(runner.initializer, function)
@@ -140,7 +116,33 @@ def execute(runner, Y_actual, params, n_steps=28):
     total_loss = (under_loss + over_loss + over_loss_squared + under_loss_squared).mean() * len(under_loss)
     return total_loss
 
-def eval_net(which, variables, params, save_folder, loss_func, ic):
+def modify_initial_exposed(file_path, proportion):
+    with open(file_path, 'r') as file:
+        reader = csv.reader(file)
+        rows = list(reader)
+    
+    header = rows[0]
+    data_rows = rows[1:]
+    
+    flat_data = [0.0 for row in data_rows for item in row]
+
+    total_numbers = len(flat_data)
+    num_ones_to_insert = int(total_numbers * proportion)
+    
+    indices = list(range(total_numbers))
+    ones_indices = random.sample(indices, num_ones_to_insert)
+    
+    for idx in ones_indices:
+        flat_data[idx] = 1.0
+
+    reshaped_data = [flat_data[i:i + len(data_rows[0])] for i in range(0, len(flat_data), len(data_rows[0]))]
+
+    with open(file_path, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(header)
+        writer.writerows(reshaped_data)
+
+def eval_net(params, loss_func):
 
     if (loss_func == 'task'):
         print("Training with task loss")
@@ -244,9 +246,15 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
     runner = sim.runner
     runner.init()
     learnable_params = [(name, param) for (name, param) in runner.named_parameters()]
+    
+    #Sanity check for cuda
+    # print(torch.__version__)
+    # print(torch.cuda.is_available())
+    # print("")
 
     df = pd.read_csv("astoria_data.csv", parse_dates = ["date"])
     case_numbers = df['cases'].values
+<<<<<<< HEAD
     # training_data = variables['Y_train']
 
     loss_array = np.array([])
@@ -257,18 +265,53 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
 
     for epoch in range(epochs):
         print("Epoch", epoch)
+=======
+    case_numbers = torch.tensor(case_numbers, dtype=torch.float, device=DEVICE)
+
+    learn_model = LearnableParams(6, device=DEVICE)
+    opt = optim.Adam(learn_model.parameters(), lr=0.01)
+    loss_array = np.array([])
+    x = torch.tensor([1.0], device=DEVICE)
+    epochs = 1
+
+    for epoch in range(epochs):
+        print("Epoch", epoch)
+>>>>>>> main
         torch.autograd.set_detect_anomaly(True)
 
         opt.zero_grad()
 
         runner.reset()
-        debug_tensor = learn_model()[:, None]
+        debug_tensor = learn_model(x)
+        print("Debug tensor: ", debug_tensor)
+        print("R0: ", debug_tensor[0])
+        print("Initial proportion of exposed: ", debug_tensor[5])
+        debug_tensor = debug_tensor[:, None]
         
         # set parameters
         # TODO: turn it into a single function
         input_string = learnable_params[0][0]
+        print(input_string)
         tensorfunc = map_and_replace_tensor(input_string)
-        current_tensor = tensorfunc(runner, debug_tensor, mode_calibrate=True)
+        current_tensor = tensorfunc(runner, debug_tensor[:4], mode_calibrate=True)
+        
+        #Sanity check for cuda 
+        # print(f"Allocated: {torch.cuda.memory_allocated()} bytes")
+        # print(f"Cached: {torch.cuda.memory_reserved()} bytes")
+
+
+
+        input_string = learnable_params[1][0]
+        print(input_string)
+        tensorfunc = map_and_replace_tensor(input_string)
+        current_tensor = tensorfunc(runner, debug_tensor[5], mode_calibrate=True)
+
+        input_string = learnable_params[2][0]
+        print(input_string)
+        tensorfunc = map_and_replace_tensor(input_string)
+        current_tensor = tensorfunc(runner, debug_tensor[4], mode_calibrate=True)
+        
+
         # execute runner
         loss = execute(runner, case_numbers, params)
         # print("Loss:", loss)
@@ -277,6 +320,7 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
         opt.step()
 
+<<<<<<< HEAD
         print(f"Loss: {loss}, Loss data type: {type(loss)}")
         loss_np = loss.detach().cpu().numpy()  # Convert to NumPy array
         loss_array = np.append(loss_array, loss_np)
@@ -287,9 +331,18 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         # for name, param in learn_model.named_parameters():
         #     print(f"Gradient for {name}: {param.grad}")
 
+=======
+        loss_data.append([i, loss.item()])
+>>>>>>> main
         print("*********************")
+
+    with open("loss_data.csv", mode='w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Iteration", "Loss"])
+        writer.writerows(loss_data) 
         # print("Gradients: ", learn_params_grad)
         # print("---"*10)
+<<<<<<< HEAD
     
     iters = np.arange(1, epochs + 1)
     print(f"Iters.shape: {iters.shape}, Shape of loss array: {loss_array.shape}")
@@ -300,3 +353,5 @@ def eval_net(which, variables, params, save_folder, loss_func, ic):
         writer.writerow(['Iteration', 'Task Loss'])
         writer.writerows(data)
 
+=======
+>>>>>>> main

@@ -61,6 +61,7 @@ class Runner(nn.Module):
             self.state["current_step"] = time_step
 
             for substep in self.config["substeps"].keys():
+                print("Substep: ", substep)
                 observation_profile, action_profile = {}, {}
 
                 for agent_type in self.config["substeps"][substep]["active_agents"]:

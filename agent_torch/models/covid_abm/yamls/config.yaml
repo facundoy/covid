@@ -416,6 +416,22 @@ substeps:
             - ${simulation_metadata.NUM_WEEKS}
             - 1
             value: 4.75
+          infected_proportion:
+            dtype: float
+            initialization_function: null
+            learnable: true
+            name: infected_proportion
+            shape:
+            - 1
+            value: 0.1
+          num_vaccines:
+            dtype: int
+            initialization_function: null
+            learnable: true
+            name: num_vaccines
+            shape:
+            - 1
+            value: 20
         generator: NewTransmission
         input_variables:
           SFInfector: environment/SFInfector

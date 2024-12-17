@@ -2,6 +2,9 @@ import torch
 from torch_geometric.data import Data
 import torch.nn.functional as F
 import re
+import random
+import math
+# import nvidia_smi
 
 from agent_torch.core.substep import SubstepTransitionMessagePassing
 from agent_torch.core.helpers import get_by_path
@@ -30,6 +33,10 @@ class NewTransmission(SubstepTransitionMessagePassing):
 
         self.calibration_mode = self.config['simulation_metadata']['calibration']
 
+        self.social_distancing_schedule = self.generate_social_distancing_schedule(
+            initial_factor=1.0, lambda_=0.01, total_steps=self.num_timesteps
+        ).to(self.device)
+
     def _lam(
         self,
         x_i,
@@ -47,6 +54,7 @@ class NewTransmission(SubstepTransitionMessagePassing):
         integrals = torch.zeros_like(B_n)
         infected_idx = x_j[:, 2].bool()
         infected_times = t - x_j[infected_idx, 3] - 1
+        infected_times = infected_times.clamp(min=0, max=lam_gamma_integrals.size(0) - 1)
 
         integrals[infected_idx] = lam_gamma_integrals[infected_times.long()]
         edge_network_numbers = edge_attr[0, :]
@@ -123,16 +131,61 @@ class NewTransmission(SubstepTransitionMessagePassing):
             recover_indices = torch.randperm(len(susceptible_indices))[:num_recoveries]
             susceptible_to_recover = susceptible_indices[recover_indices]
             
-            updated_stages = current_stages.clone()
+            updated_stages = current_stages
             updated_stages[susceptible_to_recover] = self.RECOVERED_VAR
         else:
-            updated_stages = current_stages.clone()
+            updated_stages = current_stages
         
         return updated_stages
+    
+    def get_stage_proportions(self, current_stages):
+        total_people = len(current_stages)
+        stage_names = ["susceptible", "exposed", "infected", "recovered", "dead"]
+        
+        stage_counts = torch.stack([(current_stages == i).sum() for i in range(5)])
+        proportions = stage_counts.float() / total_people
+        
+        for i, proportion in enumerate(proportions):
+            print(f"Proportion of people in {stage_names[i]}: {proportion.item():.4f}")
+
+        print("------------")
+        
+        return proportions
+    
+    def modify_initial_exposed(self, current_stages, proportion):
+        print(proportion)
+
+        for num in range(len(current_stages)):
+            if current_stages[num][0] == 1:
+                current_stages[num][0] = 0
+
+        total_numbers = len(current_stages)
+        num_ones_to_insert = int(total_numbers * proportion)
+        
+        indices = list(range(total_numbers))
+        ones_indices = random.sample(indices, num_ones_to_insert)
+        
+        for idx in ones_indices:
+            current_stages[idx][0] = 1.0
+
+        return current_stages
+    
+    def generate_social_distancing_schedule(self, initial_factor=1.0, lambda_=0.01, total_steps=28):
+        social_distancing_schedule = []
+        current_factor = initial_factor
+        
+        for t in range(total_steps):
+            current_factor = current_factor * math.exp(-lambda_)
+            social_distancing_schedule.append(current_factor)
+        
+        return torch.tensor(social_distancing_schedule, dtype=torch.float32)
+
+        
 
     def forward(self, state, action=None):
         input_variables = self.input_variables
         t = int(state["current_step"])
+        social_distancing_factor = self.social_distancing_schedule[t]
         time_step_one_hot = self._generate_one_hot_tensor(t, self.num_timesteps)
 
         week_id = int(t / 7)
@@ -143,6 +196,7 @@ class NewTransmission(SubstepTransitionMessagePassing):
         else:
             R_tensor = self.learnable_args["R2"]  # tensor of size NUM_WEEK
         R = (R_tensor * week_one_hot).sum()
+        R = R * social_distancing_factor
 
         SFSusceptibility = get_by_path(
             state, re.split("/", input_variables["SFSusceptibility"])
@@ -162,6 +216,14 @@ class NewTransmission(SubstepTransitionMessagePassing):
         current_stages = get_by_path(
             state, re.split("/", input_variables["disease_stage"])
         )
+
+        if (t == 0):
+            infected_proportion = self.calibrate_infected_proportion.to(self.device)
+            current_stages = self.modify_initial_exposed(current_stages, infected_proportion[0].item())
+
+            print("Infected proportion: ", infected_proportion)
+
+
         current_transition_times = get_by_path(
             state, re.split("/", input_variables["next_stage_time"])
         )
@@ -228,6 +290,14 @@ class NewTransmission(SubstepTransitionMessagePassing):
         #     1.0 - will_isolate.squeeze()
         # )
 
+        # nvidia_smi.nvmlInit()
+        # deviceCount = nvidia_smi.nvmlDeviceGetCount()
+        
+        # handle = nvidia_smi.nvmlDeviceGetHandleByIndex(0)
+        # util = nvidia_smi.nvmlDeviceGetUtilizationRates(handle)
+        # mem = nvidia_smi.nvmlDeviceGetMemoryInfo(handle)
+        # print(f"Mem Free: {mem.free/1024**2:5.2f}MB / {mem.total/1024**2:5.2f}MB | gpu-util: {util.gpu/100.0:3.1%} | gpu-mem: {util.memory/100.0:3.1%} |")
+
         newly_exposed_today = (
             current_stages == self.SUSCEPTIBLE_VAR
         ).squeeze() * potentially_exposed_today
@@ -245,7 +315,13 @@ class NewTransmission(SubstepTransitionMessagePassing):
             t, agents_infected_time, newly_exposed_today
         )
 
-        updated_stages = self.recover_random_agents(updated_stages)
+        num_vaccines = self.calibrate_num_vaccines.to(self.device)
+        print(num_vaccines)
+        print(R_tensor)
+
+        updated_stages = self.recover_random_agents(updated_stages, int(num_vaccines[0].item()))
+
+        self.get_stage_proportions(updated_stages)
 
         return {
             self.output_variables[0]: updated_stages,

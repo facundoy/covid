@@ -16,15 +16,10 @@ except ImportError: pass
 import torch
 
 
-import model_classes, new_nets, abm_nets
+import model_classes, abm_nets
 
 from constants import *
 
-
-# import sys
-# from IPython.core import ultratb
-# sys.excepthook = ultratb.FormattedTB(mode='Verbose',
-#      color_scheme='Linux', call_pdb=1)
 
 def main():
     parser = argparse.ArgumentParser(
@@ -37,51 +32,20 @@ def main():
         metavar="loss_function", help="Choose the loss function to train with, use task or rmse")
     args = parser.parse_args()
 
-    # Train, test split.
-
-    df = pd.read_csv("data.csv", parse_dates = ["date"])
-    date_list = df['date'].values
-    hospitalization_number = df['hosp'].values
-
-    splitting_data_point = int(len(hospitalization_number) * .8)
-    training_data = hospitalization_number[:splitting_data_point]
-    testing_data = hospitalization_number[splitting_data_point:]
-    Y_train = torch.tensor(training_data, dtype=torch.float, device=DEVICE)
-    Y_test = torch.tensor(testing_data, dtype=torch.float, device=DEVICE)
-    
-    variables_rmse = {'Y_train': Y_train, 'Y_test': Y_test}
 
     base_save = 'results' if args.save is None else '{}-results'.format(args.save)
     for run in range(args.nRuns):
         print(f"Run number: {run + 1}")
 
-        save_folder = os.path.join(base_save, str(run))
-        if not os.path.exists(save_folder):
-            os.makedirs(save_folder)
+        # save_folder = os.path.join(base_save, str(run))
+        # if not os.path.exists(save_folder):
+        #     os.makedirs(save_folder)
 
-        # Generation scheduling problem params.
         params = {"n": 24, "c_ramp": 0.4, "gamma_under": 50, "gamma_over": 0.5, "c_b": 10, "c_h": 1, "q_b": 2, "q_h": 0.5}
-
-        # Run and eval rmse-minimizing net
-        
-        # if USE_GPU:
-        #     model_rmse = model_rmse.cuda()
-
-
-        #Loop for testing
-        # E_test = [2000.0, 2250.0, 2500.0, 2750.0]
-        # Ia_test = [5000.0, 10000.0, 15000.0, 20000.0]
-        # I_test = [15.0, 20.0, 25.0]
-
-        # for E in E_test:
-        #     for Ia in Ia_test:
-        #         for I in I_test:
-        #             ic = [E, Ia, I]
-        #             new_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss, ic)
             
 
         initial_conditions = [1000.0, 30000.0, 50.0]
-        abm_nets.eval_net("rmse_net", variables_rmse, params, save_folder, args.loss, initial_conditions)
+        abm_nets.eval_net(params, args.loss)
 
 
 
