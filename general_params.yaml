@@ -1,0 +1,151 @@
+ADULT_Upper_Index: 8
+CHILD_Upper_Index: 1
+age_groups:
+- AGE_0_9
+- AGE_10_19
+- AGE_20_29
+- AGE_30_39
+- AGE_40_49
+- AGE_50_59
+- AGE_60_69
+- AGE_70_79
+- AGE_80
+age_groups_to_ix_dict:
+  AGE_0_9: 0
+  AGE_10_19: 1
+  AGE_20_29: 2
+  AGE_30_39: 3
+  AGE_40_49: 4
+  AGE_50_59: 5
+  AGE_60_69: 6
+  AGE_70_79: 7
+  AGE_80: 8
+age_ix_to_group_dict:
+  0: AGE_0_9
+  1: AGE_10_19
+  2: AGE_20_29
+  3: AGE_30_39
+  4: AGE_40_49
+  5: AGE_50_59
+  6: AGE_60_69
+  7: AGE_70_79
+  8: AGE_80
+households_sizes_list:
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+initialization_input_files:
+  agents_ages_filename: agents_ages.csv
+  agents_household_sizes_filename: agents_household_sizes.csv
+  agents_occupations_filename: agents_occupations.csv
+  parent_dir: ./census_scripts/data
+  occupation_nw_parameters_filename: ./network_parameters/occupation_network_parameters.csv
+  schools_nw_parameters_filename: ./network_parameters/schools_network_parameters.csv
+  random_nw_parameters_filename: ./network_parameters/random_network_parameters.csv
+num_steps:
+occupation_ix_to_occupations_dict:
+  AGRICULTURE: 0
+  ART: 16
+  CHILD: 20
+  CONSTRUCTION: 3
+  EDUCATION: 14
+  ELDERLY: 19
+  ENTERPRISEMANAGEMENT: 12
+  FINANCEINSURANCE: 9
+  FOOD: 17
+  HEALTHCARE: 15
+  INFORMATION: 8
+  MANUFACTURING: 4
+  MINING: 1
+  OTHER: 18
+  REALESTATERENTAL: 10
+  RETAILTRADE: 6
+  SCIENTIFICTECHNICAL: 11
+  TRANSPORTATION: 7
+  UTILITIES: 2
+  WASTEMANAGEMENT: 13
+  WHOLESALETRADE: 5
+occupations_ix_list:
+- 0
+- 1
+- 2
+- 3
+- 4
+- 5
+- 6
+- 7
+- 8
+- 9
+- 10
+- 11
+- 12
+- 13
+- 14
+- 15
+- 16
+- 17
+- 18
+- 19
+- 20
+occupations_names_list:
+- AGRICULTURE
+- MINING
+- UTILITIES
+- CONSTRUCTION
+- MANUFACTURING
+- WHOLESALETRADE
+- RETAILTRADE
+- TRANSPORTATION
+- INFORMATION
+- FINANCEINSURANCE
+- REALESTATERENTAL
+- SCIENTIFICTECHNICAL
+- ENTERPRISEMANAGEMENT
+- WASTEMANAGEMENT
+- EDUCATION
+- HEALTHCARE
+- ART
+- FOOD
+- OTHER
+- ELDERLY
+- CHILD
+occupations_to_ix_dict:
+  0: AGRICULTURE
+  1: MINING
+  2: UTILITIES
+  3: CONSTRUCTION
+  4: MANUFACTURING
+  5: WHOLESALETRADE
+  6: RETAILTRADE
+  7: TRANSPORTATION
+  8: INFORMATION
+  9: FINANCEINSURANCE
+  10: REALESTATERENTAL
+  11: SCIENTIFICTECHNICAL
+  12: ENTERPRISEMANAGEMENT
+  13: WASTEMANAGEMENT
+  14: EDUCATION
+  15: HEALTHCARE
+  16: ART
+  17: FOOD
+  18: OTHER
+  19: ELDERLY
+  20: CHILD
+output_location:
+  data_path_dir: census_scripts/data
+  agents_dir: generated_agents_data
+  agents_outfile: agents_data.csv
+  disease_dynamics_stages_file_name: disease_dynamics.csv
+  disease_dynamics_transition_times_file_name: disease_dynamics_time_parameters.csv
+  dynamics_dir: dynamics
+  household_networks_dir: household
+  households_outfile: households_data.csv
+  networks_dir: generated_networks
+  occupation_networks_dir: occupation
+  parent_dir: data
+  plots_dir: plots
+  random_networks_dir: random
+  results_dir: results

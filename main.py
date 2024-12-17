@@ -35,7 +35,7 @@ def main():
 
     base_save = 'results' if args.save is None else '{}-results'.format(args.save)
     for run in range(args.nRuns):
-        print (run)
+        print(f"Run number: {run + 1}")
 
         # save_folder = os.path.join(base_save, str(run))
         # if not os.path.exists(save_folder):
