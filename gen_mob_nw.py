@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
     # Load individual data
-    agent_data_path = f"{state_abbrev}_population_data/{county}_population.csv"
+    agent_data_path = f"data/{state_abbrev}_population_data/{county}_population.csv"
     individuals = pd.read_csv(agent_data_path)
 
     # Load network parameters
@@ -37,6 +37,7 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
     households = individuals.groupby('Household ID').groups
 
     # Create output directory
+    output_dir = os.path.join(output_dir, county)
     os.makedirs(output_dir, exist_ok=True)
     
     # Outer loop for time steps with tqdm
