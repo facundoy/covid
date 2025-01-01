@@ -41,17 +41,17 @@ def create_populations():
     fips_pattern = re.compile(r"^\d{5}$")
 
     # Iterate through all folders in `sample_dir`
-    # for folder_name in os.listdir(data_dir):
-    #     folder_path = os.path.join(data_dir, folder_name)
-    #     # Check if it's a directory and the name matches the FIPS pattern
-    #     if os.path.isdir(folder_path) and fips_pattern.match(folder_name):
-    #         county = folder_name
-    #         # Check if the state code matches the first two digits of the FIPS code
-    #         state_code = int(county[:2])  # Extract first two digits and convert to integer
-    #         if state_code == state_dict[state_abbrev]:
-    #             # Customize population for county
-    #             print(f'Customizing population for county {folder_name}')
-    #             custpop.customize(data_dir=data_dir, results_dir=results_dir, rand_gen_dir=rand_gen_dir, county=county)
+    for folder_name in os.listdir(data_dir):
+        folder_path = os.path.join(data_dir, folder_name)
+        # Check if it's a directory and the name matches the FIPS pattern
+        if os.path.isdir(folder_path) and fips_pattern.match(folder_name):
+            county = folder_name
+            # Check if the state code matches the first two digits of the FIPS code
+            state_code = int(county[:2])  # Extract first two digits and convert to integer
+            if state_code == state_dict[state_abbrev]:
+                # Customize population for county
+                print(f'Customizing population for county {folder_name}')
+                custpop.customize(data_dir=data_dir, results_dir=results_dir, rand_gen_dir=rand_gen_dir, county=county)
     
     #TEST MOBILITY NETWORKS
     print()
@@ -60,7 +60,7 @@ def create_populations():
     for folder_name in os.listdir(data_dir):
         county = folder_name
         print(f"Generating mobility network for county {county}...")
-        generate_mobility_networks(state_abbrev=state_abbrev, county=county, output_dir="generated_networks", num_steps=10)
+        generate_mobility_networks(state_abbrev=state_abbrev, county=county, output_dir="data/generated_networks", num_steps=10)
 
     
     quit() #Temporary quit for customize testing
