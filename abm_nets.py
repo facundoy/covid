@@ -254,18 +254,6 @@ def eval_net(params, loss_func):
 
     df = pd.read_csv("astoria_data.csv", parse_dates = ["date"])
     case_numbers = df['cases'].values
-<<<<<<< HEAD
-    # training_data = variables['Y_train']
-
-    loss_array = np.array([])
-
-    learn_model = LearnableParams(3)
-    opt = optim.Adam(learn_model.parameters(), lr=1e-3)
-    epochs = 1
-
-    for epoch in range(epochs):
-        print("Epoch", epoch)
-=======
     case_numbers = torch.tensor(case_numbers, dtype=torch.float, device=DEVICE)
 
     learn_model = LearnableParams(6, device=DEVICE)
@@ -276,7 +264,6 @@ def eval_net(params, loss_func):
 
     for epoch in range(epochs):
         print("Epoch", epoch)
->>>>>>> main
         torch.autograd.set_detect_anomaly(True)
 
         opt.zero_grad()
@@ -320,20 +307,7 @@ def eval_net(params, loss_func):
         learn_params_grad = [(param, param.grad) for (name, param) in learn_model.named_parameters()]
         opt.step()
 
-<<<<<<< HEAD
-        print(f"Loss: {loss}, Loss data type: {type(loss)}")
-        loss_np = loss.detach().cpu().numpy()  # Convert to NumPy array
-        loss_array = np.append(loss_array, loss_np)
-        print(f"Loss_array: {loss_array}")
-        # print(f"Loss after backward: {loss}")
-
-        # Print gradients
-        # for name, param in learn_model.named_parameters():
-        #     print(f"Gradient for {name}: {param.grad}")
-
-=======
         loss_data.append([i, loss.item()])
->>>>>>> main
         print("*********************")
 
     with open("loss_data.csv", mode='w', newline='') as file:
@@ -342,16 +316,3 @@ def eval_net(params, loss_func):
         writer.writerows(loss_data) 
         # print("Gradients: ", learn_params_grad)
         # print("---"*10)
-<<<<<<< HEAD
-    
-    iters = np.arange(1, epochs + 1)
-    print(f"Iters.shape: {iters.shape}, Shape of loss array: {loss_array.shape}")
-    assert iters.shape == loss_array.shape
-    data = np.column_stack((iters, loss_array))
-    with open("training_loss.csv", mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(['Iteration', 'Task Loss'])
-        writer.writerows(data)
-
-=======
->>>>>>> main

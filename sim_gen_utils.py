@@ -1,5 +1,6 @@
 """ This file contains utility functions for the simulation generator."""
 import networkx as nx
+import numpy as np
 import datetime
 import os
 import random
@@ -77,12 +78,14 @@ def custom_watts_strogatz_graph(n, k, p, seed=random):
     nodes = node_names  # list(range(n))  # nodes are labeled 0 to n-1
     # connect each node to k/2 neighbors
     for j in range(1, k // 2 + 1):
+        assert p != 0 and k != 0
         targets = nodes[j:] + nodes[0:j]  # first j nodes are now last in list
         G.add_edges_from(zip(nodes, targets))
     # rewire edges from each node
     # loop over all nodes in order (label) and neighbors in order (distance)
     # no self loops or multiple edges allowed
     for j in range(1, k // 2 + 1):  # outer loop is neighbors
+        assert p != 0 and k != 0
         targets = nodes[j:] + nodes[0:j]  # first j nodes are now last in list
         # inner loop in node order
         for u, v in zip(nodes, targets):
@@ -98,6 +101,27 @@ def custom_watts_strogatz_graph(n, k, p, seed=random):
                     G.add_edge(u, w)
     return G
 
+def normal_watts_strogatz_graph(n, agents, mu, sigma, seed=random):
+    if mu >= n:
+        print("mu: ", mu, " N: ", n)
+        raise nx.NetworkXError("mu>=n, choose smaller mu or larger n")
+
+    G = nx.Graph()
+    nodes = agents  # list(range(n))  # nodes are labeled 0 to n-1
+
+    # Generate degrees for each node based on normal distribution
+    degrees = np.random.normal(loc=mu, scale=sigma, size=n).astype(int)
+
+    # Ensure valid degrees (at least 1 and less than N)
+    degrees = np.clip(degrees, 1, n - 1)
+
+    # Connect nodes based on their assigned degree
+    for i, node in enumerate(nodes):
+        degree = degrees[i]  # Get the number of neighbors for this node
+        targets = nodes[i+1:i+1+degree] + nodes[:max(0, (i+1+degree) - len(nodes))]  # Circular shift for neighbors
+        G.add_edges_from(zip([node] * len(targets), targets))
+    
+    return G
 
 # def make_one_hot(tensor, num_dim):
 #     ''' Converts a tensor of indices to a one-hot tensor.'''
