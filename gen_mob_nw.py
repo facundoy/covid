@@ -3,7 +3,7 @@ from collections import Counter
 import networkx as nx
 import numpy as np
 import os
-from sim_gen_utils import custom_watts_strogatz_graph
+from sim_gen_utils import custom_watts_strogatz_graph, normal_watts_strogatz_graph
 from tqdm import tqdm
 
 
@@ -15,6 +15,9 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
     # Load network parameters
     occ_params_data_path = "network_parameters/occupation_network_parameters.csv"
     occupation_params = pd.read_csv(occ_params_data_path, index_col="Occupation")
+
+    random_params_data_path = "network_parameters/random_network_parameters.csv"
+    random_params = pd.read_csv(random_params_data_path, index_col="Age")
 
     # Map occupation names to indices
     occupation_names = occupation_params.index.to_list()
@@ -39,6 +42,15 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
     # Create output directory
     output_dir = os.path.join(output_dir, county)
     os.makedirs(output_dir, exist_ok=True)
+
+    print()
+    print("Generating Occupation Network:")
+
+    output_occ_dir = f"{output_dir}/occnets"
+    os.makedirs(output_occ_dir, exist_ok=True)
+
+    output_school_dir = f"{output_dir}/schoolnets"
+    os.makedirs(output_school_dir, exist_ok=True)
     
     # Outer loop for time steps with tqdm
     for t in tqdm(range(num_steps), desc="Time Steps Progress"):
@@ -60,21 +72,55 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
                 # Map agent indices back to original IDs
                 id_mapping = {i: agents[i] for i in range(n_agents)}
                 G = nx.relabel_nodes(G, id_mapping)
-
-                # Add edges for agents in the same household
-                for household_id, members in households.items():
-                    # Convert dataframe indices to actual agent IDs
-                    household_members = individuals.loc[members, 'ID'].tolist()
-                    
-                    # Add edges between all pairs of household members
-                    if len(household_members) > 1:  # Skip single-member households
-                        for i in range(len(household_members)):
-                            for j in range(i + 1, len(household_members)):
-                                G.add_edge(household_members[i], household_members[j])
                 
                 # Save network to file
-                outfile = os.path.join(output_dir, f"{occupation_names[occ]}_step_{t}.csv")
+                outfile = os.path.join(output_occ_dir, f"{occupation_names[occ]}_step_{t}.csv")
                 nx.write_edgelist(G, outfile, delimiter=",", data=False)
+
+    print()
+    print("Generating Household Network:")
+    n_agents = len(individuals)
+    if n_agents > 1:  # Avoid empty or trivial networks
+        # Generate network using custom implementation
+        G = custom_watts_strogatz_graph(
+            n=n_agents,             # Number of nodes
+            k=0,                    # Average degree = 0
+            p=[0, agents]           # Rewiring probability = 0 and node names
+        )
+        # Add edges for agents in the same household
+        for household_id, members in households.items():
+            # Convert dataframe indices to actual agent IDs
+            household_members = individuals.loc[members, 'ID'].tolist()
+            
+            # Add edges between all pairs of household members
+            if len(household_members) > 1:  # Skip single-member households
+                for i in range(len(household_members)):
+                    for j in range(i + 1, len(household_members)):
+                        G.add_edge(household_members[i], household_members[j])
+        
+        # Save network to file
+        outfile = os.path.join(output_dir, f"HOUSEHOLD_NETWORK.csv")
+        nx.write_edgelist(G, outfile, delimiter=",", data=False)
+
+    print()
+    print("Generating School Network:")
+    children = individuals[(individuals['Age'] >= 0) & (individuals['Age'] <= 19)]
+    agents = children['ID'].to_list()
+    mu = random_params.loc['CHILD', 'mu']
+    sigma = random_params.loc['CHILD', 'sigma']
+    for t in tqdm(range(num_steps), desc="Time Steps Progress"):
+        if n_agents > 1:  # Avoid empty or trivial networks
+            # Generate network using custom implementation
+            G = normal_watts_strogatz_graph(
+                n=n_agents,             # Number of nodes
+                agents=agents,          # Agent IDs
+                mu=mu,                  # Degree average
+                sigma=sigma             # Degree standard deviation
+            )
+            
+            # Save network to file
+            outfile = os.path.join(output_school_dir, f"School_step_{t}.csv")
+            nx.write_edgelist(G, outfile, delimiter=",", data=False)
 
 
 
