@@ -4,6 +4,7 @@ import networkx as nx
 import numpy as np
 import os
 from sim_gen_utils import custom_watts_strogatz_graph, normal_watts_strogatz_graph
+from isolate_google_mob_data import get_google_mob_data
 from tqdm import tqdm
 
 
@@ -51,13 +52,50 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps):
     output_school_dir = f"{output_dir}/schoolnets"
     os.makedirs(output_school_dir, exist_ok=True)
 
+    #Use google's mobility data to adjust mobility parameters (occupation and household):
+    google_occdata_2020, google_housedata_2020, google_occdata_2021, google_housedata_2021 = get_google_mob_data()
+    
+    #Occupation data google data setup:
+    occ_google_perc_changes_2020 = google_occdata_2020[county]
+    occ_google_perc_changes_2021 = google_occdata_2021[county]
+    assert len(occ_google_perc_changes_2020) == len(occ_google_perc_changes_2021)
+    # Convert lists to NumPy arrays and compute element-wise average
+    occ_arr1 = np.array(occ_google_perc_changes_2020)
+    occ_arr2 = np.array(occ_google_perc_changes_2021)
+    occ_averages = (occ_arr1 + occ_arr2) / 2.0
+    # Convert to Python list
+    occ_averages_list = occ_averages.tolist()
+    # print(occ_averages_list)
+
+    #Household data google data setup:
+    house_google_perc_changes_2020 = google_housedata_2020[county]
+    house_google_perc_changes_2021 = google_housedata_2021[county]
+    assert len(house_google_perc_changes_2020) == len(house_google_perc_changes_2021)
+    # Convert lists to NumPy arrays and compute element-wise average
+    house_arr1 = np.array(house_google_perc_changes_2020)
+    house_arr2 = np.array(house_google_perc_changes_2021)
+    house_averages = (house_arr1 + house_arr2) / 2.0
+    # Compute average value of array:
+    house_avg = house_averages.mean()
+    # Convert to Python float
+    house_average = float(house_avg)
+
     # Outer loop for time steps with tqdm
     for t in tqdm(range(num_steps), desc="Time Steps Progress"):
+        #Occupation data google adjustment (mu adjustment):
+        occ_mu_perc_change = occ_averages_list[t]
+        occ_decimal = occ_mu_perc_change / 100.0
+        occ_factor = 1.0 + occ_decimal
+
+        # print(f"Occ factor: {occ_factor}")
+        # quit()
+
         # Inner loop for occupation groups with tqdm
         for occ, agents in tqdm(occupation_groups.items(), desc=f"Occupation Groups Progress (Step {t})", leave=False):
             n_agents = len(agents)
             if n_agents > 1:  # Avoid empty or trivial networks
                 mu = occupation_params.loc[occupation_names[occ], 'mu']
+                mu *= occ_factor
                 rewire = occupation_params.loc[occupation_names[occ], 'rewire']
                 avg_degree = min(int(np.round(mu)), n_agents - 1)  # Ensure avg_degree < n_agents
 

@@ -140,16 +140,19 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
     
             
     #Create list of occupations in order
+    total_jobs = 0
     for index, row in OCCUPATION_DATA.iterrows():
+        total_jobs += int(row['Number'])
+
+    occ_fractions = {}
+    for index, row in OCCUPATION_DATA.iterrows():
+        fraction = int(row['Number']) / total_jobs
         occupation = str(row['Occupation'])
-        num_occupation = int(row['Number'])
-        for i in range(num_occupation):
-            occupations_list.append(occupation)
+        occ_fractions[occupation] = fraction
     
     #Randomly shuffle the lists to randomize population:
     np.random.shuffle(ages_list)
     np.random.shuffle(household_list)
-    np.random.shuffle(occupations_list)
 
     # print(f'Size of Ages List: {len(ages_list)}')
     # print(f'Size of Household List: {len(household_list)}')
@@ -261,9 +264,16 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
     # Count people with age between 18 and 65
     eligible_count = df[(df["Age"] >= 18) & (df["Age"] <= 65)].shape[0]
 
+    #Create occupation list
+    unemployement_rate = 0.07
+    num_employed = int(eligible_count * (1 - unemployement_rate))
+    for occ, frac in occ_fractions.items():
+        num_of_occ = int(frac * num_employed)
+        for i in range(num_of_occ):
+            occupations_list.append(occ)
+
     # Check if there are enough eligible people for the occupations
-    if eligible_count < len(occupations_list):
-        raise ValueError("Not enough people between ages 18 and 65 to assign all occupations") 
+    assert len(occupations_list) < eligible_count
     
     # Assign occupations to eligible people
     eligible_indices = df[(df["Age"] >= 18) & (df["Age"] <= 65)].index.tolist()
@@ -277,7 +287,7 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
 
     # Assign "" to remaining eligible people without an occupation
     for i in eligible_indices[len(occupations_list):]:
-        df.loc[i, "Occupations"] = ""
+        df.loc[i, "Occupations"] = "Unemployed"
     
 
     #Convert dataframe to csv and store in results_dir
