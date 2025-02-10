@@ -300,6 +300,9 @@ def customize(data_dir, results_dir, rand_gen_dir, county, num_agents = None):
     print(f'Population data saved for county {county} to {file_path}')
     print()
 
+    # Return age list since needed for random network creation in experiment initialization
+    return ages_list
+
     #------------------------GENERATING COUNTY YAML FILES------------------------ 
     print(f"Generating yaml file for county {county}...")
 

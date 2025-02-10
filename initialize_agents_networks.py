@@ -162,7 +162,7 @@ def create_and_write_occupation_networks(agents_occupations,
 
 def create_and_write_random_networks(num_agents, agents_ages, num_steps,
                                      random_nw_infile, child_upper_ix,
-                                     adult_upper_ix, path):
+                                     adult_upper_ix, county):
     '''Creates and writes the random networks to a file'''
     if not os.path.isfile(random_nw_infile):
         print(
@@ -192,8 +192,10 @@ def create_and_write_random_networks(num_agents, agents_ages, num_steps,
                       for i in range(len(interactions_list) - 1)]
         G = nx.Graph()
         G.add_edges_from(edges_list)
-        outfile = os.path.join(get_dir_from_path_list(path),
-                               '{}.csv'.format(t))
+
+        outfile_path = f"generated_networks/{county}/specific_networks/randnets"
+        os.makedirs(outfile_path, exist_ok=True)
+        outfile = os.path.join(outfile_path, f"random_time_{t}.csv")
         nx.write_edgelist(G, outfile, delimiter=',', data=False)
 
 
