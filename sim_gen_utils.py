@@ -105,7 +105,11 @@ def normal_watts_strogatz_graph(n, agents, mu, sigma, seed=random):
     if mu >= n:
         print("mu: ", mu, " N: ", n)
         raise nx.NetworkXError("mu>=n, choose smaller mu or larger n")
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     G = nx.Graph()
     nodes = agents  # list(range(n))  # nodes are labeled 0 to n-1
 
@@ -114,7 +118,11 @@ def normal_watts_strogatz_graph(n, agents, mu, sigma, seed=random):
 
     # Ensure valid degrees (at least 1 and less than N)
     degrees = np.clip(degrees, 1, n - 1)
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> main
     # Connect nodes based on their assigned degree
     for i, node in enumerate(nodes):
         degree = degrees[i]  # Get the number of neighbors for this node

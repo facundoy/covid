@@ -17,7 +17,7 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps, ages
     os.makedirs(specific_dir, exist_ok=True)
 
     # Load individual data
-    agent_data_path = f"{state_abbrev}_population_data/{county}_population.csv"
+    agent_data_path = f"data/{state_abbrev}_population_data/{county}_population.csv"
     individuals = pd.read_csv(agent_data_path)
     num_agents = individuals.shape[0]
 
@@ -202,7 +202,7 @@ def generate_mobility_networks(state_abbrev, county, output_dir, num_steps, ages
             k=0,                    # Average degree = 0
             p=[0, agents]           # Rewiring probability = 0 and node names
         )
-
+        
         # Add edges for agents in the same household with progress bar
         for household_id, members in households.items():
             # Convert dataframe indices to actual agent IDs
